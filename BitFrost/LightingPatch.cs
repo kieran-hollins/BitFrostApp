@@ -65,5 +65,40 @@ namespace BitFrost
 
             return led.StartDMXAddress;
         }
+
+        // Adds an LED strip from left to right
+        public void AddLEDLineHorizontal(int x, int y, int startAddress, int quantity, LEDProfile type)
+        {
+            int addressIndex = startAddress;
+
+            for (int i = x; i < x + quantity; i++)
+            {
+                LED led = new(addressIndex, type);
+
+                try
+                {
+                    AddLED(i, y, led);
+                }
+                catch (ArgumentException e)
+                {
+                    Console.WriteLine(e.Message);
+
+                    // Undo any changes made during 
+                    for (int j = i - 1; j > x; j--)
+                    {
+                        try
+                        {
+                            RemoveLED(j, y);
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+
     }
 }
