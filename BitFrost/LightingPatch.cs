@@ -13,6 +13,25 @@ namespace BitFrost
             dmxAddressMap = new Dictionary<int, (int x, int y)> ();
         }
 
+        public string AddRGBLED(int x, int y, int dmxAddress)
+        {
+            Console.WriteLine($"Adding an RGB LED at position ({x}, {y}).");
+
+            try
+            {
+                RGB type = new();
+                LED led = new(dmxAddress, type);
+                AddLED(x, y, led);
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+
+            return $"LED added at position ({x}, {y}) succesfully.";
+
+        } 
+
         public void AddLED(int x, int y, LED led)
         {
             var coordinates = (x, y);
@@ -32,6 +51,7 @@ namespace BitFrost
             }
 
             patch.Add(coordinates, led);
+
             for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
             {
                 dmxAddressMap.Add(i, coordinates);
@@ -44,7 +64,7 @@ namespace BitFrost
 
             if (!patch.ContainsKey(coordinates))
             {
-                throw new ArgumentException($"No LED at coordinates ({x}, {y})");
+                throw new ArgumentException($"No LED at coordinates ({x}, {y}).");
             }
 
             int startDMXAddress = GetStartDMXChannel(x, y);
@@ -83,7 +103,7 @@ namespace BitFrost
                 {
                     Console.WriteLine(e.Message);
 
-                    // Undo any changes made during 
+                    // Undo any changes made before catching error
                     for (int j = i - 1; j > x; j--)
                     {
                         try
@@ -92,13 +112,26 @@ namespace BitFrost
                         }
                         catch
                         {
-
+                            break;
                         }
                     }
                 }
+
+                addressIndex += led.LEDProfile.Channels;
             }
         }
 
+        // Returns the coordinate of the LED based on the DMX address map
+        public string getLEDLocation(int dmxAddress)
+        {
+            if (dmxAddressMap.ContainsKey(dmxAddress))
+            {
+                string response = $"The LED location is ({dmxAddressMap[dmxAddress].x}, {dmxAddressMap[dmxAddress].y})";
+                return response;
+            }
 
+            throw new ArgumentException($"DMX address {dmxAddress} not found.");
+
+        }
     }
 }

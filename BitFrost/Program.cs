@@ -1,6 +1,8 @@
 // Program.cs has not been touched yet. API will be built when other functionality is completed.
 
 
+using BitFrost;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,37 +13,26 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Adding patch manually for testing purposes
+LightingPatch patch = new LightingPatch();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+int x = 0, y = 0, startAddress = 1, length = 6;
+RGB type = new();
+patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
+
+x = 0;
+y = 2;
+startAddress = 19;
+length = 6;
+patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
+
+app.MapGet("api/led/location", patch.getLEDLocation);
+app.MapPost("api/led", patch.AddRGBLED);
 
 app.Run();
 
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+
