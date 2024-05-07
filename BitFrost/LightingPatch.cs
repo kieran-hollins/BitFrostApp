@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace BitFrost
 {
-    public sealed class LightingPatch
+    public sealed class LightingPatch : IPatchHelper
     {
         private readonly object _lock = new();
         private Dictionary<(int x, int y), LED> patch;
@@ -153,7 +153,7 @@ namespace BitFrost
         }
 
         // Returns the coordinate of the LED based on the DMX address map
-        public string getLEDLocation(int dmxAddress)
+        public string GetLEDLocation(int dmxAddress)
         {
             if (dmxAddressMap.ContainsKey(dmxAddress))
             {
