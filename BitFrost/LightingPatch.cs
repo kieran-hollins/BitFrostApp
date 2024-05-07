@@ -1,17 +1,42 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace BitFrost
 {
-    public class LightingPatch
+    public sealed class LightingPatch
     {
+        private readonly object _lock = new();
         private Dictionary<(int x, int y), LED> patch;
         private Dictionary<int, (int x, int y)> dmxAddressMap;
 
-        public LightingPatch()
+        private LightingPatch()
         {
             patch = new Dictionary<(int x, int y), LED> ();
             dmxAddressMap = new Dictionary<int, (int x, int y)> ();
         }
+
+        public static LightingPatch Instance { get { return Nested.patchInstance; } }
+
+        private class Nested
+        {
+            // Explicit static constructor to tell C# compiler
+            // not to mark type as beforefieldinit
+            static Nested()
+            {
+            }
+
+            internal static readonly LightingPatch patchInstance = new LightingPatch (); 
+        }
+
+        public void ClearAll()
+        {
+            lock ( _lock )
+            {
+                patch.Clear ();
+                dmxAddressMap.Clear ();
+            }
+        }
+
 
         public string AddRGBLED(int x, int y, int dmxAddress)
         {
@@ -34,48 +59,54 @@ namespace BitFrost
 
         public void AddLED(int x, int y, LED led)
         {
-            var coordinates = (x, y);
-            var startDMXAddress = led.StartDMXAddress;
-
-            if (patch.ContainsKey(coordinates))
+            lock ( _lock )
             {
-                throw new ArgumentException($"LED already existing at coordinates ({x}, {y}).");
-            }
+                var coordinates = (x, y);
+                var startDMXAddress = led.StartDMXAddress;
 
-            for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-            {
-                if (dmxAddressMap.ContainsKey(i))
+                if (patch.ContainsKey(coordinates))
                 {
-                    throw new ArgumentException($"DMX address {i} is already in use.");
+                    throw new ArgumentException($"LED already existing at coordinates ({x}, {y}).");
                 }
-            }
 
-            patch.Add(coordinates, led);
+                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
+                {
+                    if (dmxAddressMap.ContainsKey(i))
+                    {
+                        throw new ArgumentException($"DMX address {i} is already in use.");
+                    }
+                }
 
-            for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-            {
-                dmxAddressMap.Add(i, coordinates);
+                patch.Add(coordinates, led);
+
+                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
+                {
+                    dmxAddressMap.Add(i, coordinates);
+                }
             }
         }
 
         public void RemoveLED(int x, int y)
         {
-            var coordinates = (x, y);
-
-            if (!patch.ContainsKey(coordinates))
+            lock ( _lock )
             {
-                throw new ArgumentException($"No LED at coordinates ({x}, {y}).");
+                var coordinates = (x, y);
+
+                if (!patch.ContainsKey(coordinates))
+                {
+                    throw new ArgumentException($"No LED at coordinates ({x}, {y}).");
+                }
+
+                int startDMXAddress = GetStartDMXChannel(x, y);
+                var led = patch[coordinates];
+
+                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
+                {
+                    dmxAddressMap.Remove(i);
+                }
+
+                patch.Remove(coordinates);
             }
-
-            int startDMXAddress = GetStartDMXChannel(x, y);
-            var led = patch[coordinates];
-
-            for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-            {
-                dmxAddressMap.Remove(i);
-            }
-
-            patch.Remove(coordinates); 
         }
 
         private int GetStartDMXChannel(int x, int y)

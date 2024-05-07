@@ -18,20 +18,21 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Adding patch manually for testing purposes
-LightingPatch patch = new LightingPatch();
+//LightingPatch patch = LightingPatch.Instance;
 
-int x = 0, y = 0, startAddress = 1, length = 6;
-RGB type = new();
-patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
+//int x = 0, y = 0, startAddress = 1, length = 6;
+//RGB type = new();
+//patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
 
-x = 0;
-y = 2;
-startAddress = 19;
-length = 6;
-patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
+//x = 0;
+//y = 2;
+//startAddress = 19;
+//length = 6;
 
-app.MapGet("api/led/location", patch.getLEDLocation);
-app.MapPost("api/led", patch.AddRGBLED);
+//patch.AddLEDLineHorizontal(x, y, startAddress, length, type);
+
+//app.MapGet("api/led/location", patch.getLEDLocation);
+//app.MapPost("api/led", patch.AddRGBLED);
 
 app.Run();
 
