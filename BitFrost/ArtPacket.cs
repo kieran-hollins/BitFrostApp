@@ -18,7 +18,7 @@ namespace BitFrost
         private byte[] data = new byte[512];
 
         public byte Sequence { get { return sequence; } set { sequence = value; } }
-        public byte[] Data { get { return data; } set { SetData(value); } }
+        public byte[] Data { get { return data; } set { SetData(value, subUni); } }
 
         private int packetCount = 0;
 
@@ -43,7 +43,7 @@ namespace BitFrost
             return packet;
         }
 
-        private void SetData(byte[] data)
+        public void SetData(byte[] data, int universe)
         {
             if (data.Length > 512)
                 throw new ArgumentException("Data exceeds 512 bytes which is not allowed in Art-Net DMX data.");
@@ -51,6 +51,7 @@ namespace BitFrost
             int dataLength = data.Length;
             lengthHi = (byte)((dataLength >> 8) & 0xFF);
             lengthLo = (byte)(dataLength & 0xFF);
+            subUni = (byte)universe;
         }
     }
 }

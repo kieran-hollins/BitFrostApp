@@ -8,7 +8,8 @@ namespace BitFrost
         private readonly object _lock = new();
         private Dictionary<(int x, int y), LED> patch;
         private Dictionary<int, (int x, int y)> dmxAddressMap;
-        public event Action OnLEDUpdate;
+        public delegate void LEDUpdateHandler(byte[] dmxData);
+        public event LEDUpdateHandler OnLEDUpdate;
 
         private LightingPatch()
         {
@@ -55,6 +56,8 @@ namespace BitFrost
                 {
                     dmxAddressMap.Add(i, coordinates);
                 }
+
+                OnLEDUpdate?.Invoke(GetCurrentDMXData());
             }
         }
 
@@ -163,7 +166,8 @@ namespace BitFrost
 
             }
 
-            OnLEDUpdate?.Invoke();
+            OnLEDUpdate?.Invoke(dmxData);
+
             return dmxData;
         }
 
