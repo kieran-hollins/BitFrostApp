@@ -35,6 +35,8 @@ namespace BitFrost
     {
         public abstract int Channels { get; }
         public abstract string Type { get; }
+        public abstract byte[] GetDMXData();
+        public abstract void SetDMXData(byte[] data);
     }
 
     public class RGB : LEDProfile
@@ -42,22 +44,33 @@ namespace BitFrost
         public override int Channels => 3;
         public override string Type => "RGB";
 
-        public int Red { get; set; }
-        public int Green { get; set; }
-        public int Blue { get; set; }
+        public byte Red { get; set; }
+        public byte Green { get; set; }
+        public byte Blue { get; set; }
         
-        public void ConvertColour(int r, int g, int b)
+        public void ConvertColour(byte r, byte g, byte b)
         {
-            Red = Clamp(r);
-            Green = Clamp(g);
-            Blue = Clamp(b);
+            Red = r;
+            Green = g;
+            Blue = b;
         }
 
-        private static int Clamp(int input)
+        public override byte[] GetDMXData()
         {
-            if (input < 0) return 0;
-            if (input > 255) return 255;
-            else return input;
+            byte[] data = new byte[3];
+
+            data[0] = Red;
+            data[1] = Green;
+            data[2] = Blue;
+
+            return data;
+        }
+
+        public override void SetDMXData(byte[] data)
+        {
+            Red = data[0];
+            Green = data[1];
+            Blue = data[2];
         }
     }
 
@@ -66,24 +79,37 @@ namespace BitFrost
         public override int Channels => 4;
         public override string Type => "RGBW";
 
-        public int Red { get; set; }
-        public int Green { get; set; }
-        public int Blue { get; set; }
-        public int White { get; set; }
+        public byte Red { get; set; }
+        public byte Green { get; set; }
+        public byte Blue { get; set; }
+        public byte White { get; set; }
 
-        public void ConvertColour(int r, int g, int b, int w)
+        public void ConvertColour(byte r, byte g, byte b, byte w)
         {
-            Red = Clamp(r);
-            Green = Clamp(g);
-            Blue = Clamp(b);
-            White = Clamp(w);
+            Red = r;
+            Green = g;
+            Blue = b;
+            White = w;
         }
 
-        private static int Clamp(int input)
+        public override byte[] GetDMXData()
         {
-            if (input < 0) return 0;
-            if (input > 255) return 255;
-            else return input;
+            byte[] data = new byte[4];
+
+            data[0] = (byte)Red;
+            data[1] = (byte)Green;
+            data[2] = (byte)Blue;
+            data[3] = (byte)White;
+
+            return data;
+        }
+
+        public override void SetDMXData(byte[] data)
+        {
+            Red = data[0];
+            Green = data[1];
+            Blue = data[2];
+            White = data[3];
         }
     }
 
@@ -92,22 +118,33 @@ namespace BitFrost
         public override int Channels => 3;
         public override string Type => "GRB";
 
-        public int Green { get; set; }
-        public int Red { get; set; }
-        public int Blue { get; set; }
+        public byte Green { get; set; }
+        public byte Red { get; set; }
+        public byte Blue { get; set; }
 
-        public void ConvertColour(int r, int g, int b)
+        public void ConvertColour(byte r, byte g, byte b)
         {
-            Green = Clamp(g);
-            Red = Clamp(r);
-            Blue = Clamp(b);
+            Green = g;
+            Red = r;
+            Blue = b;
         }
 
-        private static int Clamp(int input)
+        public override byte[] GetDMXData()
         {
-            if (input < 0) return 0;
-            if (input > 255) return 255;
-            else return input;
+            byte[] data = new byte[3];
+
+            data[0] = Green;
+            data[1] = Red;
+            data[2] = Blue;
+
+            return data;
+        }
+
+        public override void SetDMXData(byte[] data)
+        {
+            Green = data[0];
+            Red = data[1];
+            Blue = data[2];
         }
     }
 }

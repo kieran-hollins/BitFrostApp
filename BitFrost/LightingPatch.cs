@@ -8,6 +8,7 @@ namespace BitFrost
         private readonly object _lock = new();
         private Dictionary<(int x, int y), LED> patch;
         private Dictionary<int, (int x, int y)> dmxAddressMap;
+        public event Action OnLEDUpdate;
 
         private LightingPatch()
         {
@@ -26,16 +27,7 @@ namespace BitFrost
             }
 
             internal static readonly LightingPatch patchInstance = new LightingPatch (); 
-        }
-
-        public void ClearAll()
-        {
-            lock ( _lock )
-            {
-                patch.Clear ();
-                dmxAddressMap.Clear ();
-            }
-        }
+        } 
 
         public void AddLED(int x, int y, LED led)
         {
@@ -89,6 +81,27 @@ namespace BitFrost
             }
         }
 
+        public void ClearAll()
+        {
+            lock (_lock)
+            {
+                patch.Clear();
+                dmxAddressMap.Clear();
+            }
+        }
+
+        // Returns the coordinate of the LED based on the DMX address map
+        public string GetLEDLocation(int dmxAddress)
+        {
+            if (dmxAddressMap.ContainsKey(dmxAddress))
+            {
+                string response = $"The LED location is ({dmxAddressMap[dmxAddress].x}, {dmxAddressMap[dmxAddress].y})";
+                return response;
+            }
+
+            throw new ArgumentException($"DMX address {dmxAddress} not found.");
+        }
+
         private int GetStartDMXChannel(int x, int y)
         {
             var coordinates = (x, y);
@@ -132,17 +145,27 @@ namespace BitFrost
             }
         }
 
-        // Returns the coordinate of the LED based on the DMX address map
-        public string GetLEDLocation(int dmxAddress)
+        public byte[] GetCurrentDMXData()
         {
-            if (dmxAddressMap.ContainsKey(dmxAddress))
+            byte[] dmxData = new byte[512];
+            foreach(var place in patch)
             {
-                string response = $"The LED location is ({dmxAddressMap[dmxAddress].x}, {dmxAddressMap[dmxAddress].y})";
-                return response;
+                var coordinates = place.Key;
+                var led = place.Value;
+
+                int baseAddress = led.StartDMXAddress - 1; // DMX addressing is from 1 but we this will be stored at index 0.
+                byte[] ledData = led.LEDProfile.GetDMXData();
+
+                if (baseAddress + ledData.Length <= 512)
+                {
+                    Array.Copy(ledData, 0, dmxData, baseAddress, ledData.Length);
+                }
+
             }
 
-            throw new ArgumentException($"DMX address {dmxAddress} not found.");
-
+            OnLEDUpdate?.Invoke();
+            return dmxData;
         }
+
     }
 }
