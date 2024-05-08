@@ -57,6 +57,21 @@ app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpCo
     }
 });
 
+app.MapDelete("api/patch/LED", (int x, int y) =>
+{
+    var patch = LightingPatch.Instance;
+    
+    try
+    {
+        patch.RemoveLED(x, y);
+        return Results.Ok($"LED at position ({x}, {y}) has been removed successfully.");
+    }
+    catch (Exception e)
+    {
+        return Results.Problem(detail: e.Message);
+    }
+});
+
 
 app.Run();
 
