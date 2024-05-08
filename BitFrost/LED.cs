@@ -13,6 +13,21 @@ namespace BitFrost
             StartDMXAddress = startDMXAddress;
             LEDProfile = ledProfile;
         }
+
+        public static LED CreateRGBLED(int startDMXAddress)
+        {
+            return new LED(startDMXAddress, new RGB());
+        }
+
+        public static LED CreateGRBLED(int startDMXAddress)
+        {
+            return new LED(startDMXAddress, new GRB());
+        }
+
+        public static LED CreateRGBWLED(int startDMXAddress)
+        {
+            return new LED(startDMXAddress, new RGBW());
+        }
     }
 
 

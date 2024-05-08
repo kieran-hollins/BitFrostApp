@@ -1,7 +1,5 @@
-// Program.cs has not been touched yet. API will be built when other functionality is completed.
-
-
 using BitFrost;
+using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,12 +18,44 @@ app.UseHttpsRedirection();
 // Adding patch manually for testing purposes
 LightingPatch patch = LightingPatch.Instance;
 
-app.MapPost("api/patch/addLED", (int x, int y, int dmxAddress, string type, IPatchHelper patchHelper) => 
+app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
 {
-    
-    
+    var patch = LightingPatch.Instance;
+    try
+    {
+        LED led;
+
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            led = LED.CreateRGBLED(dmxAddress);
+        }
+        else
+        {
+            switch (type.ToUpper())
+            {
+                case "RGB":
+                    led = LED.CreateRGBLED(dmxAddress);
+                    break;
+                case "RGBW":
+                    led = LED.CreateRGBWLED(dmxAddress);
+                    break;
+                case "GRB":
+                    led = LED.CreateGRBLED(dmxAddress);
+                    break;
+                default:
+                    return Results.BadRequest($"Unsupported LED type: {type}");
+            }
+        }
+
+        patch.AddLED(x, y, led);
+        return Results.Ok($"LED of type {type} added at ({x}, {y}) with starting DMX address {dmxAddress}");
+        
+    }
+    catch (Exception e) 
+    {
+        return Results.Problem(detail: e.Message);
+    }
 });
-app.MapPost("api/patch/led", patch.AddRGBLED);
 
 
 app.Run();

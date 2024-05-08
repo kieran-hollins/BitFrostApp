@@ -37,26 +37,6 @@ namespace BitFrost
             }
         }
 
-
-        public string AddRGBLED(int x, int y, int dmxAddress)
-        {
-            Console.WriteLine($"Adding an RGB LED at position ({x}, {y}).");
-
-            try
-            {
-                RGB type = new();
-                LED led = new(dmxAddress, type);
-                AddLED(x, y, led);
-            }
-            catch (Exception e)
-            {
-                return e.Message;
-            }
-
-            return $"LED added at position ({x}, {y}) succesfully.";
-
-        } 
-
         public void AddLED(int x, int y, LED led)
         {
             lock ( _lock )
