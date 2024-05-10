@@ -15,8 +15,11 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
-// Adding patch manually for testing purposes
+// Setup
 LightingPatch patch = LightingPatch.Instance;
+FXGenerator generator = FXGenerator.Instance;
+
+
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
 {

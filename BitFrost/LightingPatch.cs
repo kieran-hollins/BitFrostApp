@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace BitFrost
@@ -29,6 +30,11 @@ namespace BitFrost
 
             internal static readonly LightingPatch patchInstance = new LightingPatch (); 
         } 
+
+        public Dictionary<(int, int), LED> GetPatch()
+        {
+            return patch;
+        }
 
         public void AddLED(int x, int y, LED led)
         {
@@ -169,6 +175,25 @@ namespace BitFrost
             OnLEDUpdate?.Invoke(dmxData);
 
             return dmxData;
+        }
+
+        public void SetDMXValue(int x, int y, byte[] data)
+        {
+            var coordinates = (x, y);
+
+            if (! patch.ContainsKey(coordinates))
+            {
+                return;
+            }
+
+            if (data.Length > 4)
+            {
+                return;
+            }
+
+            var led = patch[coordinates];
+            led.LEDProfile.SetDMXData(data);
+            
         }
 
     }

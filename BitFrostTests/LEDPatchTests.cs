@@ -1,4 +1,5 @@
 using BitFrost;
+using System.Net;
 
 namespace BitFrostTests
 {
@@ -70,6 +71,30 @@ namespace BitFrostTests
             {
                 Console.WriteLine(e.ToString());
             }
+
+        }
+
+        [TestMethod]
+        public void SendRed()
+        {
+            FXGenerator generator = FXGenerator.Instance;
+            LightingPatch patch = LightingPatch.Instance;
+            ArtNetController controller = new("127.0.0.1", 0, patch);
+            controller.Enable();
+
+            patch.ClearAll();
+
+            int x = 0, y = 0;
+            int startAddress = 1;
+            RGB type = new();
+
+            patch.AddLEDLineHorizontal(x, y, startAddress, 10, type);
+            patch.AddLEDLineHorizontal(x, y+1, 31, 10, type);
+
+            generator.WorkspaceWidth = 10;
+            generator.WorkspaceHeight = 10;
+
+            generator.StaticColour("#ff0000");
 
         }
     }
