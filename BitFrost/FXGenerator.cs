@@ -7,6 +7,9 @@ namespace BitFrost
         private LightingPatch Patch;
         public int WorkspaceWidth { get; set; } = 30;
         public int WorkspaceHeight { get; set; } = 30;
+        private Timer flashTimer;
+        private bool colourToggle = false;
+        private byte[] Colours = new byte[3];
 
         private FXGenerator()
         {
@@ -26,31 +29,44 @@ namespace BitFrost
             internal static readonly FXGenerator generatorInstance = new FXGenerator ();
         }
 
-        public void StaticColour(string hexColour)
+        public void StaticColour(byte[] colourValues)
         {
-            byte[] data = new byte[3];
-            if (hexColour.Length > 7)
-            {
-                throw new ArgumentException("Ensure your string is formatted '#0D0D0D'");
-            }
-            if (hexColour[0] == '#')
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    string str = hexColour.Substring(i * 2 + 1, 2);
-                    data[i] = Convert.ToByte(str, 16);
-                }
-            }
+            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, colourValues);
+        }
 
-            for (int x = 0; x < WorkspaceWidth; x++)
-            {
-                for (int y = 0; y < WorkspaceHeight; y++)
-                {
-                    Patch.SetDMXValue(x, y, data);
-                }
-            }
+        public void ColourFlash(int intervalMS, byte[] colourValues)
+        {
+            Colours = colourValues;
+            byte[] dark = new byte[3];
 
-            Patch.GetCurrentDMXData();
+            flashTimer = new (_ => {
+                if (colourToggle)
+                {
+                    FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
+                    colourToggle = false;
+                }
+                else
+                {
+                    FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, dark);
+                    colourToggle = true;
+                }
+                
+            }, null, intervalMS, intervalMS);
+        }
+
+        private static class FXPatch
+        {
+            public static void SetValues(int width, int height, LightingPatch patch, byte[] colourValues)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        patch.SetDMXValue(x, y, colourValues);
+                    }
+                }
+                patch.GetCurrentDMXData();
+            }
         }
     }
 }

@@ -10,7 +10,7 @@ namespace BitFrost
         private Dictionary<(int x, int y), LED> patch;
         private Dictionary<int, (int x, int y)> dmxAddressMap;
         public delegate void LEDUpdateHandler(byte[] dmxData);
-        public event LEDUpdateHandler OnLEDUpdate;
+        public event LEDUpdateHandler? OnLEDUpdate;
 
         private LightingPatch()
         {

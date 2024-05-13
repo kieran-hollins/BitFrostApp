@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Net;
+using System.Diagnostics;
 
 namespace BitFrost
 {
@@ -26,12 +27,13 @@ namespace BitFrost
             BackBuffer = new byte[512];
             Patch = patch;
             Patch.OnLEDUpdate += SetData; // Subscribe to LED update event
+            Universe = universe;
         }
 
         public void Enable()
         {
             Enabled = true;
-            SendTimer = new Timer(async _ => await SendDMXAsync(), null, 0, RefreshRate);
+            SendTimer = new Timer(async _ => await SendDMXAsync(), null, RefreshRate, RefreshRate);
         }
 
         public void Disable()
@@ -71,11 +73,21 @@ namespace BitFrost
             {
                 dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
             }
-
+            
             ArtPacket packet = new();
             packet.SetData(dataToSend, Universe);
 
-            await UDPClient.SendAsync(packet.GetPacket(), packet.GetPacket().Length, DestinationEndPoint); 
+            try
+            {
+                await UDPClient.SendAsync(packet.GetPacket(), packet.GetPacket().Length, DestinationEndPoint);
+                Debug.WriteLine($"Sent DMX packet at {DateTime.Now}");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"Failed to send DMX: {e.Message}");
+            }
+
+            
         }
 
         private void SwapBuffers()

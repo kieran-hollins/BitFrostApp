@@ -5,7 +5,7 @@ VisualStudioVersion = 17.7.34221.43
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BitFrost", "BitFrost\BitFrost.csproj", "{499AB9BE-1F11-45F6-96CA-815C9D875D49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BitFrostTests", "BitFrostTests\BitFrostTests.csproj", "{7F568BEC-1425-4AF2-B865-A36112BCD8D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BitFrostTests", "BitFrostTests\BitFrostTests.csproj", "{7F568BEC-1425-4AF2-B865-A36112BCD8D7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{499AB9BE-1F11-45F6-96CA-815C9D875D49} = {499AB9BE-1F11-45F6-96CA-815C9D875D49}
 	EndProjectSection

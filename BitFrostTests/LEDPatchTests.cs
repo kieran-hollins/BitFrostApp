@@ -93,9 +93,35 @@ namespace BitFrostTests
 
             generator.WorkspaceWidth = 10;
             generator.WorkspaceHeight = 10;
+            byte[] red = new byte[3];
+            red[0] = 0xff;
+            generator.StaticColour(red);
 
-            generator.StaticColour("#ff0000");
+        }
 
+        [TestMethod]
+        public void FlashGreen()
+        {
+            FXGenerator generator = FXGenerator.Instance;
+            LightingPatch patch = LightingPatch.Instance;
+            ArtNetController controller = new("127.0.0.1", 0, patch);
+            controller.Enable();
+
+            patch.ClearAll();
+
+            int x = 0, y = 0;
+            int startAddress = 1;
+            RGB type = new();
+
+            patch.AddLEDLineHorizontal(x, y, startAddress, 10, type);
+            patch.AddLEDLineHorizontal(x, y + 1, 31, 10, type);
+
+            generator.WorkspaceWidth = 10;
+            generator.WorkspaceHeight = 10;
+            byte[] green = new byte[3];
+            green[1] = 0xff;
+
+            generator.ColourFlash(1000, green);
         }
     }
 }

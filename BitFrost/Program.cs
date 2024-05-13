@@ -19,7 +19,10 @@ app.UseHttpsRedirection();
 LightingPatch patch = LightingPatch.Instance;
 FXGenerator generator = FXGenerator.Instance;
 
+app.MapGet("api/demo", () =>
+{
 
+});
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
 {
@@ -75,7 +78,22 @@ app.MapDelete("api/patch/LED", (int x, int y) =>
     }
 });
 
+app.MapPost("api/fx/static-colour", (string hexColour) =>
+{
+    var generator = FXGenerator.Instance;
+
+    byte[] channelValues = new byte[3];
+
+    channelValues = Utils.GetColourValuesFromHex(hexColour);
+    try
+    {
+        generator.StaticColour(channelValues);
+        return Results.Ok($"Static colour set. Hex Colour: {hexColour}");
+    }
+    catch (Exception e)
+    {
+        return Results.Problem(detail: e.Message);
+    }
+});
 
 app.Run();
-
-
