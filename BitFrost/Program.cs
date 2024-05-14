@@ -16,12 +16,30 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Setup
-LightingPatch patch = LightingPatch.Instance;
-FXGenerator generator = FXGenerator.Instance;
+//LightingPatch patch = LightingPatch.Instance;
+//FXGenerator generator = FXGenerator.Instance;
+//ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
+//controller.Enable();
+//RGB rgb = new();
+//patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
 
 app.MapGet("api/demo", () =>
 {
+    LightingPatch patch = LightingPatch.Instance;
+    patch.ClearAll();
+    FXGenerator generator = FXGenerator.Instance;
+    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
+    controller.Enable();
+    RGB rgb = new();
+    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
 
+    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
+
+    generator.StaticColour(Utils.GetRandomColour());
 });
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>

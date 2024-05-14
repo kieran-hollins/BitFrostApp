@@ -89,7 +89,7 @@ namespace BitFrostTests
             RGB type = new();
 
             patch.AddLEDLineHorizontal(x, y, startAddress, 10, type);
-            patch.AddLEDLineHorizontal(x, y+1, 31, 10, type);
+            patch.AddLEDLineHorizontal(x, y + 1, 31, 10, type);
 
             generator.WorkspaceWidth = 10;
             generator.WorkspaceHeight = 10;
@@ -120,8 +120,7 @@ namespace BitFrostTests
             generator.WorkspaceHeight = 10;
             byte[] green = new byte[3];
             green[1] = 0xff;
-
-            generator.ColourFlash(1000, green);
+            generator.ColourFlash(500, green);
         }
     }
 }

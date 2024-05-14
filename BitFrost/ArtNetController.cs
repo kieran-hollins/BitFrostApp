@@ -16,6 +16,7 @@ namespace BitFrost
         private byte[] FrontBuffer;
         private byte[] BackBuffer;
         private LightingPatch Patch;
+        private bool IsBufferReady = false;
 
         public ArtNetController(string destinationIP, int universe, LightingPatch patch, int port = 6454)
         {
@@ -33,7 +34,11 @@ namespace BitFrost
         public void Enable()
         {
             Enabled = true;
-            SendTimer = new Timer(async _ => await SendDMXAsync(), null, RefreshRate, RefreshRate);
+            SendTimer = new Timer(
+                callback: new TimerCallback(async _ => await SendDMXAsync()),
+                state: this,
+                dueTime: RefreshRate,
+                period: RefreshRate);
         }
 
         public void Disable()
@@ -62,16 +67,29 @@ namespace BitFrost
             lock (_bufferLock)
             {
                 Array.Copy(data, BackBuffer, data.Length); // Copy new data into the back buffer
-                SwapBuffers(); // Swap the front and back buffers
+                Debug.WriteLine($"Copying {data[0]} {data[1]} {data[2]}... to back buffer");
+                if (!IsBufferReady)
+                {
+                    Debug.WriteLine("Swapping buffers now.");
+                    SwapBuffers(); // Swap the front and back buffers
+                    IsBufferReady = true;
+                }
+                
             }
         }
 
         private async Task SendDMXAsync()
         {
+            if (!IsBufferReady)
+            {
+                return;
+            }
+
             byte[] dataToSend;
             lock (_bufferLock)
             {
                 dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
+                IsBufferReady = false;
             }
             
             ArtPacket packet = new();
@@ -80,7 +98,7 @@ namespace BitFrost
             try
             {
                 await UDPClient.SendAsync(packet.GetPacket(), packet.GetPacket().Length, DestinationEndPoint);
-                Debug.WriteLine($"Sent DMX packet at {DateTime.Now}");
+                Debug.WriteLine($"Sent DMX packet at {DateTime.Now}. Buffer starts with: {dataToSend[0]} {dataToSend[1]} {dataToSend[2]}");
             }
             catch (Exception e)
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace BitFrost
@@ -63,7 +64,7 @@ namespace BitFrost
                     dmxAddressMap.Add(i, coordinates);
                 }
 
-                OnLEDUpdate?.Invoke(GetCurrentDMXData());
+                // OnLEDUpdate?.Invoke(GetCurrentDMXData());
             }
         }
 
@@ -87,6 +88,8 @@ namespace BitFrost
                 }
 
                 patch.Remove(coordinates);
+
+                OnLEDUpdate?.Invoke(GetCurrentDMXData());
             }
         }
 
@@ -159,7 +162,7 @@ namespace BitFrost
             byte[] dmxData = new byte[512];
             foreach(var place in patch)
             {
-                var coordinates = place.Key;
+                //var coordinates = place.Key; // This is only really required for debugging
                 var led = place.Value;
 
                 int baseAddress = led.StartDMXAddress - 1; // DMX addressing is from 1 but we this will be stored at index 0.

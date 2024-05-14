@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 
 namespace BitFrost
 {
@@ -7,13 +8,14 @@ namespace BitFrost
         private LightingPatch Patch;
         public int WorkspaceWidth { get; set; } = 30;
         public int WorkspaceHeight { get; set; } = 30;
-        private Timer flashTimer;
-        private bool colourToggle = false;
-        private byte[] Colours = new byte[3];
+        private Timer? flashTimer;
+        private bool ColourToggle = true;
+        private byte[] Colours;
 
         private FXGenerator()
         {
             Patch = LightingPatch.Instance;
+            Colours = new byte[3];
         }
 
         public static FXGenerator Instance { get { return Nested.generatorInstance; } }
@@ -31,7 +33,8 @@ namespace BitFrost
 
         public void StaticColour(byte[] colourValues)
         {
-            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, colourValues);
+            Colours = colourValues;
+            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
         }
 
         public void ColourFlash(int intervalMS, byte[] colourValues)
@@ -40,18 +43,18 @@ namespace BitFrost
             byte[] dark = new byte[3];
 
             flashTimer = new (_ => {
-                if (colourToggle)
+                if (ColourToggle)
                 {
                     FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
-                    colourToggle = false;
+                    ColourToggle = false;
                 }
                 else
                 {
                     FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, dark);
-                    colourToggle = true;
+                    ColourToggle = true;
                 }
                 
-            }, null, intervalMS, intervalMS);
+            }, this, intervalMS, intervalMS);
         }
 
         private static class FXPatch
@@ -62,6 +65,7 @@ namespace BitFrost
                 {
                     for (int y = 0; y < height; y++)
                     {
+                        // Debug.Write($"Setting patch ({x}, {y}) to {colourValues[0]} {colourValues[1]} {colourValues[2] }");
                         patch.SetDMXValue(x, y, colourValues);
                     }
                 }

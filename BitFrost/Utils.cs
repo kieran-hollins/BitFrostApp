@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace BitFrost
 {
@@ -16,6 +17,7 @@ namespace BitFrost
                 for (int i = 0; i < 3; i++)
                 {
                     channelValues[i] = Convert.ToByte(match.Groups[i + 1].Value, 16);
+                    // Debug.WriteLine($"Setting channel {i} to {channelValues[i]}");
                 }
             }
             else
@@ -24,6 +26,18 @@ namespace BitFrost
             }
 
             return channelValues;
+        }
+
+        public static byte[] GetRandomColour()
+        {
+            byte[] channels = new byte[3];
+
+            Random rnd = new Random();
+            channels[0] = (byte)rnd.Next(0, 255);
+            channels[1] = (byte)rnd.Next(0, 255);
+            channels[2] = (byte)rnd.Next(0, 255);
+
+            return channels;
         }
     }
 }
