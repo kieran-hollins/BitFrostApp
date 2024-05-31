@@ -45,7 +45,7 @@ namespace BitFrost
         {
             if (t < 0 || t > 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(t), "Value must be between 0 and 1.");
+                throw new ArgumentOutOfRangeException(nameof(t), "Value must be between 0 and 1");
             }
 
             Debug.WriteLine($"Scaled value = {min + t * (max - min)}");

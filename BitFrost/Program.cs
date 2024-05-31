@@ -1,5 +1,6 @@
 using BitFrost;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +17,13 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Setup
-//LightingPatch patch = LightingPatch.Instance;
-//FXGenerator generator = FXGenerator.Instance;
-//ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-//controller.Enable();
-//RGB rgb = new();
-//patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
+ArtNetController Controller = new("172.0.0.1", 0, LightingPatch.Instance);
+
+app.MapGet("api/controller", () =>
+{
+    string jsonString = JsonSerializer.Serialize(Controller);
+    return jsonString;
+});
 
 app.MapGet("api/demo", () =>
 {

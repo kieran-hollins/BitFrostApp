@@ -1,6 +1,8 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BitFrost
 {
@@ -121,5 +123,21 @@ namespace BitFrost
             UDPClient.Close();
         }
 
+    }
+
+    public class ArtNetControllerJsonConverter : JsonConverter<ArtNetController>
+    {
+        public override ArtNetController? Read(ref Utf8JsonReader reader,
+                                                Type typeToConvert,
+                                                JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+        public override void Write(Utf8JsonWriter writer,
+                                               ArtNetController value,
+                                               JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
