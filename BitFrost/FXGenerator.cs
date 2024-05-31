@@ -10,12 +10,15 @@ namespace BitFrost
         public int WorkspaceHeight { get; set; } = 30;
         private Timer? flashTimer;
         private bool ColourToggle = true;
-        private byte[] Colours;
+        private byte[] Colours { get; set; }
+        private float Speed { get; set; } = 0.5f;
+        private Action CurrentEffect;
 
         private FXGenerator()
         {
             Patch = LightingPatch.Instance;
             Colours = new byte[3];
+            CurrentEffect = null;
         }
 
         public static FXGenerator Instance { get { return Nested.generatorInstance; } }
@@ -31,18 +34,32 @@ namespace BitFrost
             internal static readonly FXGenerator generatorInstance = new FXGenerator ();
         }
 
-        public void StaticColour(byte[] colourValues)
+        public void setColour(byte[] colourValues)
         {
+            Debug.WriteLine($"Colours set: {colourValues[0]}, {colourValues[1]}, {colourValues[2]}");
             Colours = colourValues;
-            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
         }
 
-        public void ColourFlash(int intervalMS, byte[] colourValues)
+        public void ApplyMovementEffect(string effectName)
         {
-            Colours = colourValues;
-            byte[] dark = new byte[3];
+            Debug.WriteLine($"Effect Name Received: {effectName}.");
+            switch(effectName.ToLower()) 
+            {
+                case "colour-flash":
+                    Debug.WriteLine("Triggering colour-flash");
+                    CurrentEffect = ColourFlash;
+                    CurrentEffect?.Invoke();
+                    break;
+            }
+        }
 
-            flashTimer = new (_ => {
+        private void ColourFlash()
+        {
+            // Uses linear interpolation to scale the timer period
+            int timerMs = (int)Utils.Scale(Speed, 50, 1000);
+
+            flashTimer = new(_ =>
+            {
                 if (ColourToggle)
                 {
                     FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
@@ -50,11 +67,18 @@ namespace BitFrost
                 }
                 else
                 {
-                    FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, dark);
+                    FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, new byte[3]);
                     ColourToggle = true;
                 }
-                
-            }, this, intervalMS, intervalMS);
+
+            }, this, timerMs, timerMs);
+            
+        }
+
+        public void StaticColour(byte[] colourValues)
+        {
+            Colours = colourValues;
+            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
         }
 
         private static class FXPatch

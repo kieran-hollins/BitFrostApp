@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace BitFrost
@@ -38,6 +39,17 @@ namespace BitFrost
             channels[2] = (byte)rnd.Next(0, 255);
 
             return channels;
+        }
+
+        public static double Scale(double t, double min, double max)
+        {
+            if (t < 0 || t > 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(t), "Value must be between 0 and 1.");
+            }
+
+            Debug.WriteLine($"Scaled value = {min + t * (max - min)}");
+            return min + t * (max - min);
         }
     }
 }
