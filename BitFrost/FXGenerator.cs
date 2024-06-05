@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.Serialization.Formatters;
 
 namespace BitFrost
 {
@@ -13,12 +14,14 @@ namespace BitFrost
         private byte[] Colours { get; set; }
         private float Speed { get; set; } = 0.5f;
         private Action CurrentEffect;
+        public AudioProcessor AudioProcessor;
 
         private FXGenerator()
         {
             Patch = LightingPatch.Instance;
             Colours = new byte[3];
             CurrentEffect = null;
+            AudioProcessor = new AudioProcessor();
         }
 
         public static FXGenerator Instance { get { return Nested.generatorInstance; } }
@@ -34,7 +37,7 @@ namespace BitFrost
             internal static readonly FXGenerator generatorInstance = new FXGenerator ();
         }
 
-        public void setColour(byte[] colourValues)
+        public void SetColour(byte[] colourValues)
         {
             Debug.WriteLine($"Colours set: {colourValues[0]}, {colourValues[1]}, {colourValues[2]}");
             Colours = colourValues;
@@ -50,8 +53,66 @@ namespace BitFrost
                     CurrentEffect = ColourFlash;
                     CurrentEffect?.Invoke();
                     break;
+                case "horizontal-bounce":
+                    Debug.WriteLine("Triggering horizontal-bounce");
+                    CurrentEffect = HorizontalBounceStart;
+                    CurrentEffect?.Invoke();
+                    break;
+                case "beat-change":
+                    Debug.WriteLine("Triggering beat-change");
+                    CurrentEffect = BeatColourChange;
+                    CurrentEffect?.Invoke();
+                    break;
             }
         }
+
+        private void HorizontalBounceStart()
+        {
+            HorizontalBounce(0);
+        }
+
+        private void HorizontalBounce(int pos)
+        {
+            if (pos <= 0)
+            {
+                pos += 1;
+                FXPatch.SetVerticalLineValues(pos, WorkspaceHeight, Patch, Colours);
+                FXPatch.SetVerticalLineValues(pos - 1, WorkspaceHeight, Patch, new byte[3]);
+            }
+            else if (pos >= WorkspaceWidth)
+            {
+                pos -= 1;
+                FXPatch.SetVerticalLineValues(pos, WorkspaceHeight, Patch, Colours);
+                FXPatch.SetVerticalLineValues(pos + 1, WorkspaceHeight, Patch, new byte[3]);
+            }
+
+            Thread.Sleep(30);
+
+            HorizontalBounce(pos);
+        }
+
+        public void SendTestAudio()
+        {
+            double[] audioData = new double[5];
+            for (int i = 0; i < audioData.Length; i++)
+            {
+                audioData[i] = 101.0;
+            }
+            AudioProcessor.ProcessAudio(audioData);
+        }
+
+        private void BeatColourChange()
+        {
+            AudioProcessor.OnBeatEvent += SetRandomColour;
+            AudioProcessor.Start();
+        }
+
+        private void SetRandomColour(int index, double magnitude)
+        {
+            Colours = Utils.GetRandomColour();
+            StaticColour(Colours);
+        }
+        
 
         private void ColourFlash()
         {
@@ -93,6 +154,34 @@ namespace BitFrost
                         patch.SetDMXValue(x, y, colourValues);
                     }
                 }
+                patch.GetCurrentDMXData();
+            }
+
+            public static void SetHorizontalLineValues(int width, int y, LightingPatch patch, byte[] colourValues)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    patch.SetDMXValue(x, y, colourValues);
+                }
+                patch.GetCurrentDMXData();
+            }
+
+            public static void SetVerticalLineValues(int x, int height, LightingPatch patch, byte[] colourValues)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    patch.SetDMXValue(x, y, colourValues);
+                }
+                patch.GetCurrentDMXData();
+            }
+
+            public static void SetPixelValueNoUpdate(int x, int y, LightingPatch patch, byte[] colourValues)
+            {
+                patch.SetDMXValue(x, y, colourValues);
+            }
+
+            public static void UpdatePatch(LightingPatch patch)
+            {
                 patch.GetCurrentDMXData();
             }
         }
