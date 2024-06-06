@@ -13,7 +13,7 @@ namespace BitFrost
         private bool ColourToggle = true;
         private byte[] Colours { get; set; }
         private float Speed { get; set; } = 0.5f;
-        private Action CurrentEffect;
+        private Action? CurrentEffect;
         public AudioProcessor AudioProcessor;
 
         private FXGenerator()
@@ -63,6 +63,11 @@ namespace BitFrost
                     CurrentEffect = BeatColourChange;
                     CurrentEffect?.Invoke();
                     break;
+                case "rainbow-audio":
+                    Debug.WriteLine("Triggering rainbow-audio");
+                    CurrentEffect = StartRainbowAudio;
+                    CurrentEffect?.Invoke();
+                    break;
             }
         }
 
@@ -107,10 +112,81 @@ namespace BitFrost
             AudioProcessor.Start();
         }
 
-        private void SetRandomColour(int index, double magnitude)
+        private void SetRandomColour(double frequency, double magnitude)
         {
+            Debug.WriteLine($"Frequency: {frequency} Magnitude: {magnitude}");
             Colours = Utils.GetRandomColour();
             StaticColour(Colours);
+        }
+
+        private void StartRainbowAudio()
+        {
+            AudioProcessor.OnBeatEvent += RainbowAudio;
+            AudioProcessor.Start();
+        }
+
+        private void RainbowAudio(double frequency, double magnitude) 
+        {
+            double maxEnergy = 1000f;
+
+            byte[] red = Utils.GetColour("red");
+            byte[] green = Utils.GetColour("green");
+            byte[] blue = Utils.GetColour("blue");
+            byte[] yellow = Utils.GetColour("yellow");
+            byte[] teal = Utils.GetColour("teal");
+            byte[] violet = Utils.GetColour("violet");
+
+            int sectionWidth = (int)Math.Ceiling(WorkspaceWidth / 6f);
+
+            Debug.WriteLine($"Frequency: {frequency} Magnitude: {magnitude}");
+
+            if (frequency > 0 && frequency <= 100) 
+            { 
+                for (int i = 0; i < sectionWidth; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, red);
+                }
+            }
+
+            if (frequency > 100 && frequency <= 300)
+            {
+                for (int i = sectionWidth; i < sectionWidth*2; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, yellow);
+                }
+            }
+
+            if (frequency > 300 && frequency <= 600)
+            {
+                for (int i = sectionWidth*2; i < sectionWidth * 3; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, green);
+                }
+            }
+
+            if (frequency > 800 && frequency <= 1500)
+            {
+                for (int i = sectionWidth * 3; i < sectionWidth * 4; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, teal);
+                }
+            }
+
+            if (frequency > 1500 && frequency <= 3000)
+            {
+                for (int i = sectionWidth * 4; i < sectionWidth * 5; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, blue);
+                }
+            }
+
+            if (frequency > 3000 && frequency <= 18800)
+            {
+                for (int i = sectionWidth * 6; i < sectionWidth * 7; i++)
+                {
+                    FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, violet);
+                }
+            }
         }
         
 

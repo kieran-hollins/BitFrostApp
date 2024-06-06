@@ -41,6 +41,47 @@ namespace BitFrost
             return channels;
         }
 
+        public static byte[] GetColour(string colourName)
+        {
+            byte[] channels = new byte[3];
+
+            switch (colourName.ToLower())
+            {
+                case "red":
+                    channels[0] = 255;
+                    channels[1] = 0;
+                    channels[2] = 0;
+                    break;
+                case "green":
+                    channels[0] = 0;
+                    channels[1] = 255;
+                    channels[2] = 0;
+                    break;
+                case "blue":
+                    channels[0] = 0;
+                    channels[1] = 0;
+                    channels[2] = 255;
+                    break;
+                case "yellow":
+                    channels[0] = 255;
+                    channels[1] = 255;
+                    channels[2] = 0;
+                    break;
+                case "teal":
+                    channels[0] = 0;
+                    channels[1] = 255;
+                    channels[2] = 255;
+                    break;
+                case "violet":
+                    channels[0] = 255;
+                    channels[1] = 0;
+                    channels[2] = 255;
+                    break;
+            }
+
+            return channels;
+        }
+
         public static double Scale(double t, double min, double max)
         {
             if (t < 0 || t > 1)
@@ -50,6 +91,24 @@ namespace BitFrost
 
             Debug.WriteLine($"Scaled value = {min + t * (max - min)}");
             return min + t * (max - min);
+        }
+
+        public static double Lerp(double value, double oldMin, double  oldMax, double newMin, double newMax)
+        {
+            if (value < oldMin)
+            {
+                value = oldMin;
+            }
+            else if (value > oldMax)
+            {
+                value = oldMax;
+            }
+
+            double oldRange = oldMax - oldMin;
+            double newRange = newMax - newMin;
+            double scaledValue = ((value - oldMin) / oldRange) * newRange + newMin;
+
+            return scaledValue;
         }
     }
 }
