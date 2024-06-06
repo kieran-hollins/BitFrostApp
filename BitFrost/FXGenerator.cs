@@ -8,7 +8,7 @@ namespace BitFrost
     {
         private LightingPatch Patch;
         public int WorkspaceWidth { get; set; } = 30;
-        public int WorkspaceHeight { get; set; } = 30;
+        public int WorkspaceHeight { get; set; } = 4;
         private Timer? flashTimer;
         private bool ColourToggle = true;
         private byte[] Colours { get; set; }
@@ -127,7 +127,7 @@ namespace BitFrost
 
         private void RainbowAudio(double frequency, double magnitude) 
         {
-            double maxEnergy = 1000f;
+            double maxEnergy = 8000f;
 
             byte[] red = Utils.GetColour("red");
             byte[] green = Utils.GetColour("green");

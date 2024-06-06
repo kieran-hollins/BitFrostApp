@@ -29,8 +29,9 @@ namespace BitFrost
             return channelValues;
         }
 
-        public static byte[] GetRandomColour()
+        public static byte[] GetRandomColour(double? brightness)
         {
+
             byte[] channels = new byte[3];
 
             Random rnd = new Random();

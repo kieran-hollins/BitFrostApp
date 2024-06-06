@@ -69,7 +69,7 @@ namespace BitFrost
 
         private void ProcessTransformedData(System.Numerics.Complex[] transformedData) 
         {
-            double threshold = 75.0;
+            double threshold = 200.0;
             int N = transformedData.Length;
 
             for (int i = 0; i < N / 2; i++)
