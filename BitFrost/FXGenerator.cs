@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using ComputeSharp;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.Serialization.Formatters;
 
@@ -68,6 +69,11 @@ namespace BitFrost
                     CurrentEffect = StartRainbowAudio;
                     CurrentEffect?.Invoke();
                     break;
+                case "red-shader-test":
+                    Debug.WriteLine("Triggering Shader Test");
+                    CurrentEffect = TestRedShader;
+                    CurrentEffect?.Invoke();
+                    break;
             }
         }
 
@@ -94,6 +100,55 @@ namespace BitFrost
             Thread.Sleep(30);
 
             HorizontalBounce(pos);
+        }
+
+        private void TestRedShader()
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            RedShaderEffect(currentLedData);
+        }
+
+        private void RedShaderEffect(byte[] ledData)
+        {
+            int totalLeds = ledData.Length / 3; // Assuming RGB for now...
+            float[] ledColours = new float[ledData.Length];
+
+            using (var buffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(ledColours))
+            {
+                var shader = new Shaders.StaticRed(buffer, totalLeds);
+                GraphicsDevice.GetDefault().For(totalLeds, shader);
+
+                // Retrieve processed data from GPU
+                buffer.CopyTo(ledColours);
+                
+            }
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            for(int i = 1; i < totalLeds; i+=3) 
+            {
+                byte[] CurrentLedData = new byte[3];
+
+                for (int j = 0; j < 3; j++)
+                {
+                    CurrentLedData[j] = processedData[i+j];
+                }
+
+                try
+                {
+                    var coordinate = Patch.GetLEDLocation(i);
+                    Patch.SetDMXValue(coordinate.Item1, coordinate.Item2, CurrentLedData);
+                }
+                catch
+                {
+
+                }
+                
+            }
+
+            Patch.GetCurrentDMXData();
+
+            
         }
 
         public void SendTestAudio()

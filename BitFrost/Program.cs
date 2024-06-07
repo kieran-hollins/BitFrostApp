@@ -44,6 +44,25 @@ app.MapGet("api/demo", () =>
     generator.StaticColour(Utils.GetRandomColour());
 });
 
+app.MapGet("api/demo/shader-test", () =>
+{
+    LightingPatch patch = LightingPatch.Instance;
+    patch.ClearAll();
+    FXGenerator generator = FXGenerator.Instance;
+    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
+    controller.Enable();
+    RGB rgb = new();
+    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
+    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
+
+    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
+
+    generator.ApplyMovementEffect("red-shader-test");
+});
+
 app.MapGet("api/demo/flash", () =>
 {
     LightingPatch patch = LightingPatch.Instance;
@@ -61,7 +80,6 @@ app.MapGet("api/demo/flash", () =>
     generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
 
     generator.SetColour(Utils.GetRandomColour());
-
     generator.ApplyMovementEffect("colour-flash");
 });
 
@@ -127,6 +145,8 @@ app.MapGet("api/demo/rainbow-audio", () =>
 
     generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
     generator.ApplyMovementEffect("rainbow-audio");
+
+    return Results.Ok($"S2L effect enabled: \'rainbow audio\'");
 });
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>

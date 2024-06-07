@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BitFrost
 {
-    public sealed class LightingPatch : IPatchHelper
+    public sealed class LightingPatch
     {
         private readonly object _lock = new();
         private Dictionary<(int x, int y), LED> patch;
@@ -103,12 +103,23 @@ namespace BitFrost
         }
 
         // Returns the coordinate of the LED based on the DMX address map
-        public string GetLEDLocation(int dmxAddress)
+        public string GetLEDLocationString(int dmxAddress)
         {
             if (dmxAddressMap.ContainsKey(dmxAddress))
             {
                 string response = $"The LED location is ({dmxAddressMap[dmxAddress].x}, {dmxAddressMap[dmxAddress].y})";
                 return response;
+            }
+
+            throw new ArgumentException($"DMX address {dmxAddress} not found.");
+        }
+
+        public (int, int) GetLEDLocation(int dmxAddress)
+        {
+            if (dmxAddressMap.ContainsKey(dmxAddress))
+            {
+                var coordinates = dmxAddressMap[dmxAddress];
+                return coordinates;
             }
 
             throw new ArgumentException($"DMX address {dmxAddress} not found.");
