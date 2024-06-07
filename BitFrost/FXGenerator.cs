@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.Serialization.Formatters;
+using TerraFX.Interop.Windows;
 
 namespace BitFrost
 {
@@ -71,7 +72,7 @@ namespace BitFrost
                     break;
                 case "red-shader-test":
                     Debug.WriteLine("Triggering Shader Test");
-                    CurrentEffect = TestRedShader;
+                    CurrentEffect = StartAudioWaveShader;
                     CurrentEffect?.Invoke();
                     break;
             }
@@ -147,8 +148,60 @@ namespace BitFrost
             }
 
             Patch.GetCurrentDMXData();
+        }
 
-            
+        private void AudioWaveShader(double frequency, double magnitude)
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            WaveShaderEffect(currentLedData, frequency, magnitude);
+
+        }
+
+        private void StartAudioWaveShader()
+        {
+            AudioProcessor.OnBeatEvent += AudioWaveShader;
+            AudioProcessor.Start();
+        }
+
+        private void WaveShaderEffect(byte[] ledData, double frequency, double magnitude)
+        {
+            int totalLeds = ledData.Length / 3; // Assuming RGB for now...
+            float[] ledColours = new float[ledData.Length];
+
+            using (var buffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(ledColours))
+            {
+                var shader = new Shaders.WaveShader(buffer, (float)DateTime.Now.TimeOfDay.TotalSeconds, WorkspaceWidth, WorkspaceHeight, (float)frequency, (float)magnitude);
+                GraphicsDevice.GetDefault().For(totalLeds, shader);
+
+                // Retrieve processed data from GPU
+                buffer.CopyTo(ledColours);
+
+            }
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            for (int i = 1; i < totalLeds; i += 3)
+            {
+                byte[] CurrentLedData = new byte[3];
+
+                for (int j = 0; j < 3; j++)
+                {
+                    CurrentLedData[j] = processedData[i + j];
+                }
+
+                try
+                {
+                    var coordinate = Patch.GetLEDLocation(i);
+                    Patch.SetDMXValue(coordinate.Item1, coordinate.Item2, CurrentLedData);
+                }
+                catch
+                {
+
+                }
+
+            }
+
+            Patch.GetCurrentDMXData();
         }
 
         public void SendTestAudio()

@@ -21,5 +21,35 @@ namespace BitFrost
                 LEDColours[i * 3 + 2] = 0.0f; // Blue
             }
         }
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct WaveShader : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> ledColors;
+            public readonly float time;
+            public readonly int width;
+            public readonly int height;
+            public readonly float frequency;
+            public readonly float amplitude;
+
+            public void Execute()
+            {
+                int x = ThreadIds.X % width;
+                int y = ThreadIds.X / width;
+                float u = x / (float)width;
+                float v = y / (float)height;
+
+                float wave = 0.5f + 0.5f * Hlsl.Sin(time * frequency + amplitude * (u * u + v * v));
+                float r = wave;
+                float g = 0.5f * wave;
+                float b = 1.0f - wave;
+
+                int index = (y * width + x) * 3;
+                ledColors[index + 0] = r;
+                ledColors[index + 1] = g;
+                ledColors[index + 2] = b;
+            }
+        }
     }
 }
