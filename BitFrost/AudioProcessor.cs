@@ -1,17 +1,25 @@
 ﻿using MathNet.Numerics.IntegralTransforms;
 using NAudio.Wave;
 using System.Diagnostics;
+using System.Timers;
 
 namespace BitFrost
 {
     public class AudioProcessor
     {
-        public delegate void BeatEventHandler(double frequency, double magnitude);
-        public event BeatEventHandler? OnBeatEvent;
+        //public delegate void BeatEventHandler(double frequency, double magnitude);
+        //public event BeatEventHandler? OnBeatEvent;
+        public delegate void AudioBufferEventHandler(float[] MagnitudeBuffer, float[] FrequencyBuffer);
+        public event AudioBufferEventHandler? OnAudioBufferEvent; 
         private readonly WaveInEvent waveIn;
         private readonly int sampleRate = 44100;
         private readonly int bufferMs = 100;
         public bool IsRecording = false;
+        private System.Timers.Timer? SendBuffer;
+
+        public float[] MagnitudeBuffer { get; private set; }
+        public float[] FrequencyBuffer { get; private set; }
+        public int DataSize {  get; private set; }
 
         public AudioProcessor()
         {
@@ -19,22 +27,47 @@ namespace BitFrost
             {
                 WaveFormat = new WaveFormat(sampleRate, 1),
                 BufferMilliseconds = bufferMs,
-                DeviceNumber = 0
+                DeviceNumber = 0 // Uses default audio input device
                 
             };
             waveIn.DataAvailable += OnDataAvailable;
+
+            DataSize = (sampleRate / 1000) * bufferMs; // Number of samples in the buffer
+            MagnitudeBuffer = new float[DataSize];
+            FrequencyBuffer = new float[DataSize];
+
+            for(int i = 0; i < DataSize; i++)
+            {
+                FrequencyBuffer[i] = i * sampleRate / DataSize;
+            }
         }
 
         public void Start()
         {
+            if (IsRecording)
+            {
+                Debug.WriteLine("Already recording");
+                return;
+            }
             waveIn.StartRecording();            
             IsRecording = true;
             Debug.WriteLine("Recording Started");
+
+            SendBuffer = new System.Timers.Timer(bufferMs);
+            SendBuffer.Elapsed += SendAudioBuffers;
+            SendBuffer.AutoReset = true;
+            SendBuffer.Start();
         }
 
         public void Stop()
         {
+            if (!IsRecording)
+            {
+                Debug.WriteLine("Not currently recording");
+                return;
+            }
             waveIn.StopRecording();
+            SendBuffer.Stop();
             IsRecording = false;
             Debug.WriteLine("Recording Stopped");
         }
@@ -69,19 +102,30 @@ namespace BitFrost
 
         private void ProcessTransformedData(System.Numerics.Complex[] transformedData) 
         {
-            double threshold = 200.0;
             int N = transformedData.Length;
 
             for (int i = 0; i < N / 2; i++)
             {
-                double magnitude = transformedData[i].Magnitude;
-                double frequency = i * sampleRate / N;
-                if (magnitude > threshold)
-                {
-                    OnBeatEvent?.Invoke(frequency, magnitude);
-                }
+                MagnitudeBuffer[i] = (float)transformedData[i].Magnitude;
             }
         }
+
+        public float[] GetMagnitudeBuffer()
+        {
+            return MagnitudeBuffer;
+        }
+
+        public float[] GetFrequencyBuffer()
+        {
+            return FrequencyBuffer;
+        }
+
+        private void SendAudioBuffers(object? sender, ElapsedEventArgs? e)
+        {
+            OnAudioBufferEvent?.Invoke(MagnitudeBuffer, FrequencyBuffer);
+        }
+
+
 
     }
 }
