@@ -27,29 +27,39 @@ namespace BitFrost
         }
 
         [AutoConstructor]
-        [EmbeddedBytecode(DispatchAxis.X)]
+        [EmbeddedBytecode(DispatchAxis.XY)]
         public readonly partial struct WaveShader : IComputeShader
         {
             public readonly ReadWriteBuffer<float> ledColors;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> frequencyBuffer;
             public readonly float time;
             public readonly int width;
             public readonly int height;
-            public readonly float frequency;
-            public readonly float amplitude;
 
             public void Execute()
             {
-                int x = ThreadIds.X % width;
-                int y = ThreadIds.X / width;
-                float u = x / (float)width;
-                float v = y / (float)height;
-
-                float wave = 0.5f + 0.5f * Hlsl.Sin(time * frequency + amplitude * (u * u + v * v));
-                float r = wave;
-                float g = 0.5f * wave;
-                float b = 1.0f - wave;
-
+                int x = ThreadIds.X;
+                int y = ThreadIds.Y;
                 int index = (y * width + x) * 3;
+
+                float2 fragcoord = new float2(x, y);
+                float2 resolution = new float2(width, height);
+                float2 uv = fragcoord / resolution;
+
+                // Improve index calculation and reduce redundant operations
+                int magFreqIndex = (int)(uv.X * magnitudeBuffer.Length);
+                float magnitude = magnitudeBuffer[magFreqIndex];
+                float frequency = frequencyBuffer[magFreqIndex];
+
+                // Smoother and more visually appealing wave function
+                float wave = 0.5f + 0.5f * Hlsl.Sin(time * frequency + magnitude * (Hlsl.Length(uv) * Hlsl.Length(uv)));
+
+                // Enhance color calculation for more vibrant output
+                float r = Hlsl.SmoothStep(0.0f, 1.0f, wave);
+                float g = Hlsl.SmoothStep(0.3f, 1.0f, wave);
+                float b = Hlsl.SmoothStep(0.6f, 1.0f, wave);
+
                 ledColors[index + 0] = r;
                 ledColors[index + 1] = g;
                 ledColors[index + 2] = b;
@@ -61,12 +71,12 @@ namespace BitFrost
         public readonly partial struct FFTGlow : IComputeShader
         {
             public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> frequencyBuffer;
             public readonly float time;
             public readonly int width;
             public readonly int height;
             public readonly float force;
-            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
-            public readonly ReadOnlyBuffer<float> frequencyBuffer;
 
 
             public void Execute()

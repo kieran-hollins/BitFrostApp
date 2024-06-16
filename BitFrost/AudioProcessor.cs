@@ -13,7 +13,7 @@ namespace BitFrost
         public event AudioBufferEventHandler? OnAudioBufferEvent; 
         private readonly WaveInEvent waveIn;
         private readonly int sampleRate = 44100;
-        private readonly int bufferMs = 100;
+        private readonly int bufferMs = 500;
         public bool IsRecording = false;
         private System.Timers.Timer? SendBuffer;
 
