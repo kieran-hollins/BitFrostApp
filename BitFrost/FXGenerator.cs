@@ -15,11 +15,12 @@ namespace BitFrost
         private bool ColourToggle = true;
         private byte[] Colours { get; set; }
         private float Speed { get; set; } = 0.5f;
+        private bool IsProcessing;
         private Action? CurrentEffect;
         public AudioProcessor AudioProcessor;
-        private readonly ReadWriteBuffer<float> _buffer;
-        private readonly ReadOnlyBuffer<float> _magBuffer;
-        private readonly ReadOnlyBuffer<float> _freqBuffer;
+        private ReadWriteBuffer<float> _ledBuffer;
+        private ReadOnlyBuffer<float> _magBuffer;
+        private ReadOnlyBuffer<float> _freqBuffer;
 
         private FXGenerator()
         {
@@ -27,6 +28,7 @@ namespace BitFrost
             Colours = new byte[3];
             CurrentEffect = null;
             AudioProcessor = new AudioProcessor();
+            IsProcessing = false;
         }
 
         public static FXGenerator Instance { get { return Nested.generatorInstance; } }
@@ -41,6 +43,8 @@ namespace BitFrost
 
             internal static readonly FXGenerator generatorInstance = new FXGenerator ();
         }
+
+
 
         public void SetColour(byte[] colourValues)
         {
@@ -68,59 +72,26 @@ namespace BitFrost
                     CurrentEffect = TestRedShader;
                     CurrentEffect?.Invoke();
                     break;
-
-                    //case "colour-flash":
-                    //    Debug.WriteLine("Triggering colour-flash");
-                    //    CurrentEffect = ColourFlash;
-                    //    CurrentEffect?.Invoke();
-                    //    break;
-                    //case "horizontal-bounce":
-                    //    Debug.WriteLine("Triggering horizontal-bounce");
-                    //    CurrentEffect = HorizontalBounceStart;
-                    //    CurrentEffect?.Invoke();
-                    //    break;
-                    //case "beat-change":
-                    //    Debug.WriteLine("Triggering beat-change");
-                    //    CurrentEffect = BeatColourChange;
-                    //    CurrentEffect?.Invoke();
-                    //    break;
-                    //case "rainbow-audio":
-                    //    Debug.WriteLine("Triggering rainbow-audio");
-                    //    CurrentEffect = StartRainbowAudio;
-                    //    CurrentEffect?.Invoke();
-                    //    break;
-                    //case "red-shader-test":
-                    //    Debug.WriteLine("Triggering Shader Test");
-                    //    CurrentEffect = StartAudioWaveShader;
-                    //    CurrentEffect?.Invoke();
-                    //    break;
+                case "average":
+                    Debug.WriteLine("Triggering Average Colour Shader");
+                    CurrentEffect = StartAverageColour;
+                    CurrentEffect?.Invoke();
+                    break;
             }
         }
 
-        //private void HorizontalBounceStart()
-        //{
-        //    HorizontalBounce(0);
-        //}
 
-        //private void HorizontalBounce(int pos)
-        //{
-        //    if (pos <= 0)
-        //    {
-        //        pos += 1;
-        //        FXPatch.SetVerticalLineValues(pos, WorkspaceHeight, Patch, Colours);
-        //        FXPatch.SetVerticalLineValues(pos - 1, WorkspaceHeight, Patch, new byte[3]);
-        //    }
-        //    else if (pos >= WorkspaceWidth)
-        //    {
-        //        pos -= 1;
-        //        FXPatch.SetVerticalLineValues(pos, WorkspaceHeight, Patch, Colours);
-        //        FXPatch.SetVerticalLineValues(pos + 1, WorkspaceHeight, Patch, new byte[3]);
-        //    }
+        public void UpdateBuffers(float[] magnitudeBuffer, float[] frequencyBuffer, int totalLEDs)
+        {
+            float[] ledColours = new float[totalLEDs];
+            var graphicsDevice = GraphicsDevice.GetDefault();
 
-        //    Thread.Sleep(30);
+            _ledBuffer = graphicsDevice.AllocateReadWriteBuffer(ledColours);
+            _magBuffer = graphicsDevice.AllocateReadOnlyBuffer(magnitudeBuffer);
+            _freqBuffer = graphicsDevice.AllocateReadOnlyBuffer(frequencyBuffer);
+        }
 
-        //    HorizontalBounce(pos);
-        //}
+
 
         private void TestRedShader()
         {
@@ -149,6 +120,8 @@ namespace BitFrost
 
         }
 
+
+
         private void StartAudioWaveShader()
         {
             AudioProcessor.OnAudioBufferEvent += AudioWaveShader;
@@ -164,26 +137,50 @@ namespace BitFrost
 
         private void WaveShaderEffect(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
         {
-            int totalLeds = ledData.Length / 3; // Assuming RGB for now...
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
+            int totalLeds = Patch.GetTotalLEDs();
             float[] ledColours = new float[ledData.Length];
 
-            using (var buffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(ledColours))
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            try
             {
-                var magBuffer = GraphicsDevice.GetDefault().AllocateReadOnlyBuffer(magnitudeBuffer);
-                var freqBuffer = GraphicsDevice.GetDefault().AllocateReadOnlyBuffer(frequencyBuffer);
-                var shader = new Shaders.WaveShader(buffer, magBuffer, freqBuffer, (float)DateTime.Now.TimeOfDay.TotalSeconds, WorkspaceWidth, WorkspaceHeight);
-                // GraphicsDevice.GetDefault().For(WorkspaceWidth, WorkspaceHeight, shader);
-                GraphicsDevice.GetDefault().For(WorkspaceWidth, WorkspaceHeight, shader);
-
-                // Retrieve processed data from GPU
-                buffer.CopyTo(ledColours);
-
+                UpdateBuffers(magnitudeBuffer, frequencyBuffer, totalLeds);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message.ToString());
+                return;
             }
 
-            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+            try
+            {
+                var shader = new Shaders.WaveShader(_ledBuffer, _magBuffer, _freqBuffer);
 
-            UpdatePatch(processedData, totalLeds);
+                graphicsDevice.For(WorkspaceWidth, shader);
+
+                _ledBuffer.CopyTo(ledColours);
+
+                byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+                UpdatePatch(processedData, totalLeds);
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine(e.Message.ToString());
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
+            
         }
+
 
         private void StartFFTGlow()
         {
@@ -216,7 +213,6 @@ namespace BitFrost
                     buffer,
                     magBuffer,
                     freqBuffer,
-                    (float)DateTime.Now.TimeOfDay.TotalSeconds,
                     WorkspaceWidth,
                     WorkspaceHeight,
                     force
@@ -244,134 +240,82 @@ namespace BitFrost
             }
         }
 
-        
 
-        //public void SendTestAudio()
-        //{
-        //    double[] audioData = new double[5];
-        //    for (int i = 0; i < audioData.Length; i++)
-        //    {
-        //        audioData[i] = 101.0;
-        //    }
-        //    AudioProcessor.ProcessAudio(audioData);
-        //}
+        private void StartAverageColour()
+        {
+            AudioProcessor.OnAudioBufferEvent += AverageColourShader;
+            AudioProcessor.Start();
+        }
 
-        //private void BeatColourChange()
-        //{
-        //    AudioProcessor.OnBeatEvent += SetRandomColour;
-        //    AudioProcessor.Start();
-        //}
+        private void AverageColourShader(float[] magnitudebuffer, float[] frequencyBuffer)
+        {
+            byte[] currentLEDData = Patch.GetCurrentDMXData();
+            AverageColourEffect(currentLEDData, magnitudebuffer, frequencyBuffer);
+        }
 
-        //private void SetRandomColour(double frequency, double magnitude)
-        //{
-        //    Debug.WriteLine($"Frequency: {frequency} Magnitude: {magnitude}");
-        //    Colours = Utils.GetRandomColour();
-        //    StaticColour(Colours);
-        //}
+        private void AverageColourEffect(byte[] ledData, float[] magnitudebuffer, float[] frequencyBuffer)
+        {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
 
-        //private void StartRainbowAudio()
-        //{
-        //    AudioProcessor.OnBeatEvent += RainbowAudio;
-        //    AudioProcessor.Start();
-        //}
+            int totalLEDs = Patch.GetTotalLEDs();
+            float[] LEDColours = new float[ledData.Length];
 
-        //private void RainbowAudio(double frequency, double magnitude) 
-        //{
-        //    // This is the old method using the CPU. Replace when possible.
-        //    double maxEnergy = 8000f;
+            var graphicsDevice = GraphicsDevice.GetDefault();
 
-        //    byte[] red = Utils.GetColour("red");
-        //    byte[] green = Utils.GetColour("green");
-        //    byte[] blue = Utils.GetColour("blue");
-        //    byte[] yellow = Utils.GetColour("yellow");
-        //    byte[] teal = Utils.GetColour("teal");
-        //    byte[] violet = Utils.GetColour("violet");
+            try
+            {
+                UpdateBuffers(magnitudebuffer, frequencyBuffer, totalLEDs);
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine(e.Message.ToString());
+                return;
+            }
 
-        //    int sectionWidth = (int)Math.Ceiling(WorkspaceWidth / 6f);
+            int gain = 10000;
 
-        //    Debug.WriteLine($"Frequency: {frequency} Magnitude: {magnitude}");
+            var shader = new Shaders.AverageColourShader(
+                    _ledBuffer,
+                    _magBuffer,
+                    _freqBuffer,
+                    gain
+                    );
 
-        //    if (frequency > 0 && frequency <= 100) 
-        //    { 
-        //        for (int i = 0; i < sectionWidth; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, red);
-        //        }
-        //    }
+            graphicsDevice.For(WorkspaceWidth, shader);
 
-        //    if (frequency > 100 && frequency <= 300)
-        //    {
-        //        for (int i = sectionWidth; i < sectionWidth*2; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, yellow);
-        //        }
-        //    }
+            if(_ledBuffer.Length > LEDColours.Length)
+            {
+                throw new ArgumentOutOfRangeException($"Buffer size: {_ledBuffer.Length} exceeds destination array length: {nameof(LEDColours)}");
+            }
 
-        //    if (frequency > 300 && frequency <= 600)
-        //    {
-        //        for (int i = sectionWidth*2; i < sectionWidth * 3; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, green);
-        //        }
-        //    }
+            try
+            {
+                _ledBuffer.CopyTo(LEDColours, 0, 0, _ledBuffer.Length);
 
-        //    if (frequency > 800 && frequency <= 1500)
-        //    {
-        //        for (int i = sectionWidth * 3; i < sectionWidth * 4; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, teal);
-        //        }
-        //    }
+                byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
 
-        //    if (frequency > 1500 && frequency <= 3000)
-        //    {
-        //        for (int i = sectionWidth * 4; i < sectionWidth * 5; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, blue);
-        //        }
-        //    }
+                UpdatePatch(processedData, totalLEDs);
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine(e.Message.ToString());
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
 
-        //    if (frequency > 3000 && frequency <= 18800)
-        //    {
-        //        for (int i = sectionWidth * 6; i < sectionWidth * 7; i++)
-        //        {
-        //            FXPatch.SetVerticalLineValues(i, (int)Utils.Lerp(magnitude, 0f, maxEnergy, 0f, WorkspaceHeight), Patch, violet);
-        //        }
-        //    }
-        //}
-        
+        }
 
-        //private void ColourFlash()
-        //{
-        //    // Uses linear interpolation to scale the timer period
-        //    int timerMs = (int)Utils.Scale(Speed, 50, 1000);
 
-        //    flashTimer = new(_ =>
-        //    {
-        //        if (ColourToggle)
-        //        {
-        //            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
-        //            ColourToggle = false;
-        //        }
-        //        else
-        //        {
-        //            FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, new byte[3]);
-        //            ColourToggle = true;
-        //        }
-
-        //    }, this, timerMs, timerMs);
-            
-        //}
-
-        //public void StaticColour(byte[] colourValues)
-        //{
-        //    Colours = colourValues;
-        //    FXPatch.SetValues(WorkspaceWidth, WorkspaceHeight, Patch, Colours);
-        //}
 
         private void UpdatePatch(byte[] processedData, int totalLeds)
         {
-            Debug.WriteLine("Updating Patch");
+            Debug.WriteLine("Updating Patch Data");
             for (int i = 1; i < totalLeds; i += 3)
             {
                 byte[] CurrentLedData = new byte[3];
@@ -385,17 +329,20 @@ namespace BitFrost
                 {
                     var coordinate = Patch.GetLEDLocation(i);
                     Patch.SetDMXValue(coordinate.Item1, coordinate.Item2, CurrentLedData);
-                    Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
+                    // Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
                 }
-                catch
+                catch(Exception e)
                 {
-
+                    Debug.WriteLine($"Patch data exception: {e.Message}");
                 }
 
             }
 
+            Debug.WriteLine("Refreshing the patch");
             Patch.GetCurrentDMXData();
         }
+
+
 
         private static class FXPatch
         {

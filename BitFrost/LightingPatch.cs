@@ -12,11 +12,13 @@ namespace BitFrost
         private Dictionary<int, (int x, int y)> dmxAddressMap;
         public delegate void LEDUpdateHandler(byte[] dmxData);
         public event LEDUpdateHandler? OnLEDUpdate;
+        public bool IsAvailable;
 
         private LightingPatch()
         {
             patch = new Dictionary<(int x, int y), LED> ();
             dmxAddressMap = new Dictionary<int, (int x, int y)> ();
+            IsAvailable = true;
         }
 
         public static LightingPatch Instance { get { return Nested.patchInstance; } }
@@ -93,6 +95,11 @@ namespace BitFrost
             }
         }
 
+        public int GetTotalLEDs()
+        {
+            return dmxAddressMap.Count;
+        }
+
         public void ClearAll()
         {
             lock (_lock)
@@ -136,6 +143,13 @@ namespace BitFrost
         // Adds an LED strip from left to right
         public void AddLEDLineHorizontal(int x, int y, int startAddress, int quantity, LEDProfile type)
         {
+            if (!IsAvailable)
+            {
+                return;
+            }
+
+            IsAvailable = false;
+
             int addressIndex = startAddress;
 
             for (int i = x; i < x + quantity; i++)
@@ -166,17 +180,24 @@ namespace BitFrost
 
                 addressIndex += led.LEDProfile.Channels;
             }
+
+            IsAvailable = true;
         }
 
         public byte[] GetCurrentDMXData()
         {
+            if (!IsAvailable)
+            {
+                return new byte[512];
+            }
+            IsAvailable = false;
+
             byte[] dmxData = new byte[512];
             foreach(var place in patch)
             {
-                //var coordinates = place.Key; // This is only really required for debugging
                 var led = place.Value;
 
-                int baseAddress = led.StartDMXAddress - 1; // DMX addressing is from 1 but we this will be stored at index 0.
+                int baseAddress = led.StartDMXAddress - 1; // DMX addressing is from 1 but this will be stored at index 0.
                 byte[] ledData = led.LEDProfile.GetDMXData();
 
                 if (baseAddress + ledData.Length <= 512)
@@ -188,11 +209,19 @@ namespace BitFrost
 
             OnLEDUpdate?.Invoke(dmxData);
 
+            IsAvailable = true;
+
             return dmxData;
         }
 
         public void SetDMXValue(int x, int y, byte[] data)
         {
+            if(!IsAvailable)
+            {
+                return;
+            }
+            IsAvailable = false;
+
             var coordinates = (x, y);
 
             if (! patch.ContainsKey(coordinates))
@@ -207,7 +236,8 @@ namespace BitFrost
 
             var led = patch[coordinates];
             led.LEDProfile.SetDMXData(data);
-            
+
+            IsAvailable = true;
         }
 
     }

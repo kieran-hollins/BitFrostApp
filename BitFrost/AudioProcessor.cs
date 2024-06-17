@@ -1,4 +1,6 @@
-﻿using MathNet.Numerics.IntegralTransforms;
+﻿using MathNet.Filtering.FIR;
+using MathNet.Numerics.IntegralTransforms;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 using NAudio.Wave;
 using System.Diagnostics;
 using System.Timers;
@@ -13,13 +15,15 @@ namespace BitFrost
         public event AudioBufferEventHandler? OnAudioBufferEvent; 
         private readonly WaveInEvent waveIn;
         private readonly int sampleRate = 44100;
-        private readonly int bufferMs = 500;
+        private readonly int bufferMs = 20;
         public bool IsRecording = false;
         private System.Timers.Timer? SendBuffer;
 
         public float[] MagnitudeBuffer { get; private set; }
         public float[] FrequencyBuffer { get; private set; }
         public int DataSize {  get; private set; }
+
+        private readonly OnlineFirFilter BandPassFilter;
 
         public AudioProcessor()
         {
@@ -40,6 +44,13 @@ namespace BitFrost
             {
                 FrequencyBuffer[i] = i * sampleRate / DataSize;
             }
+
+            // Design the band-pass filter (20 Hz to 15,000 Hz)
+            int filterOrder = 128; // Adjust order as needed
+            double lowCutoff = 20.0 / (sampleRate / 2.0);
+            double highCutoff = 15000.0 / (sampleRate / 2.0);
+            double[] coefficients = MathNet.Filtering.FIR.FirCoefficients.BandPass(filterOrder, lowCutoff, highCutoff);
+            BandPassFilter = new OnlineFirFilter(coefficients);
         }
 
         public void Start()
@@ -88,11 +99,13 @@ namespace BitFrost
 
         public void ProcessAudio(double[] audioData)
         {
-            var complexData = new System.Numerics.Complex[audioData.Length];
+            double[] filteredData = BandPassFilter.ProcessSamples(audioData); // Apply filter to audible range
+
+            var complexData = new System.Numerics.Complex[filteredData.Length];
 
             for (int i = 0; i < complexData.Length; i++)
             {
-                complexData[i] = new System.Numerics.Complex(audioData[i], 0);
+                complexData[i] = new System.Numerics.Complex(filteredData[i], 0);
             }
 
             Fourier.Forward(complexData, FourierOptions.Matlab);

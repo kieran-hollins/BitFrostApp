@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="ComputeSharp" Version="2.1.0" />
+    <PackageReference Include="MathNet.Filtering" Version="0.7.0" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
