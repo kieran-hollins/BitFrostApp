@@ -29,7 +29,8 @@ namespace BitFrost
             FrontBuffer = new byte[512];
             BackBuffer = new byte[512];
             Patch = patch;
-            Patch.OnLEDUpdate += SetData; // Subscribe to LED update event
+            Patch.OnLEDUpdate += SetData;
+                
             Universe = universe;
         }
 
@@ -66,6 +67,8 @@ namespace BitFrost
                 throw new ArgumentException("DMX data length exceeds 512 bytes.");
             }
 
+            Debug.WriteLine("SetData called");
+
             lock (_bufferLock)
             {
                 Array.Copy(data, BackBuffer, data.Length); // Copy new data into the back buffer
@@ -93,7 +96,7 @@ namespace BitFrost
                 dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
                 IsBufferReady = false;
             }
-            
+
             ArtPacket packet = new();
             packet.SetData(dataToSend, Universe);
 

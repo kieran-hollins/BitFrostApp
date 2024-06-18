@@ -26,6 +26,84 @@ namespace BitFrost
             }
         }
 
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct HelloShader : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly float time;
+
+            public void Execute()
+            {
+                int x = ThreadIds.X;
+
+                float r = 0.25f + 0.75f * Hlsl.Cos(time + (float)Math.PI * 0.25f);
+                float g = 0.25f + 0.75f * Hlsl.Cos(time + 2 * (float)Math.PI * 0.25f);
+                float b = 0.25f + 0.75f * Hlsl.Cos(time + 4 * (float)Math.PI * 0.25f);
+
+                LEDColours[x * 3 + 0] = r; // Red
+                LEDColours[x * 3 + 1] = g; // Green
+                LEDColours[x * 3 + 2] = b; // Blue
+
+            }
+        }
+
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct AverageColourShader : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> ledColours;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly int width;
+            public readonly int numBins;
+
+            public void Execute()
+            {
+                int x = ThreadIds.X;
+                int totalElements = magnitudeBuffer.Length / 2;
+
+                // Calculate the current bin index based on the thread ID and width
+                int binIndex = (x * numBins) / totalElements;
+
+                // Fetch the magnitude for the current bin
+                float magnitude = magnitudeBuffer[binIndex];
+
+                // Normalize the magnitude
+                float normalizedMagnitude = Hlsl.Lerp(0.0f, 1.0f, magnitude);
+
+                // Calculate the color based on the position and normalized magnitude
+                float3 colour = PositionToColour(x, width);
+                float3 finalColour = colour * normalizedMagnitude;
+
+                // Assign the final color to the LED buffer
+                ledColours[x * 3 + 0] = finalColour.X;
+                ledColours[x * 3 + 1] = finalColour.Y;
+                ledColours[x * 3 + 2] = finalColour.Z;
+            }
+
+            private float3 PositionToColour(int x, int width)
+            {
+                float ratio = (float)x / width;
+                float3 colour;
+
+                if (ratio < 0.5f)
+                {
+                    float subRatio = ratio * 2.0f; // Scale to [0, 1]
+                    colour = new float3(1.0f - ratio, subRatio, 0.0f); // Red to Green
+                }
+                else
+                {
+                    float subRatio = (ratio - 0.5f) * 2.0f; // Scale to [0, 1]
+                    colour = new float3(0.0f, 1.0f - subRatio, ratio); // Green to Blue
+                }
+
+                return colour;
+            }
+        }
+
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.X)]
         public readonly partial struct WaveShader : IComputeShader
@@ -184,73 +262,6 @@ namespace BitFrost
 
         }
 
-        [AutoConstructor]
-        [EmbeddedBytecode(DispatchAxis.X)]
-        public readonly partial struct AverageColourShader : IComputeShader
-        {
-            public readonly ReadWriteBuffer<float> ledColours;
-            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
-            public readonly ReadOnlyBuffer<float> frequencyBuffer;
-            public readonly int gain;
-
-            public void Execute()
-            {
-                int x = ThreadIds.X;
-
-                float rCutOff = 1000;
-                float gCutOff = 8000;
-                float bCutOff = 1500;
-
-                float rSum = 0.0f;
-                float gSum = 0.0f;
-                float bSum = 0.0f;
-
-                int rCount = 0;
-                int gCount = 0;
-                int bCount = 0;
-
-                int totalElements = magnitudeBuffer.Length;
-
-                // Sum the magnitudes based on frequency cutoffs
-                for (int i = 0; i < totalElements; i++)
-                {
-                    if (frequencyBuffer[i] < rCutOff)
-                    {
-                        rSum += Scale(magnitudeBuffer[i], 0.0f, 255.0f);
-                        rCount++;
-                    }
-                    else if (frequencyBuffer[i] < gCutOff)
-                    {
-                        gSum += Scale(magnitudeBuffer[i], 0.0f, 255.0f);
-                        gCount++;
-                    }
-                    else if (frequencyBuffer[i] < bCutOff)
-                    {
-                        bSum += Scale(magnitudeBuffer[i], 0.0f, 255.0f);
-                        bCount++;
-                    }
-                }
-
-                // Compute the average magnitudes for each color band
-                float rAvg = rCount > 0 ? rSum / rCount : 0.0f;
-                float gAvg = gCount > 0 ? gSum / gCount : 0.0f;
-                float bAvg = bCount > 0 ? bSum / bCount : 0.0f;
-
-                // Generate color based on the averages
-                float r = Hlsl.Lerp(0.0f, 1.0f, rAvg);
-                float g = Hlsl.Lerp(0.0f, 1.0f, gAvg);
-                float b = Hlsl.Lerp(0.0f, 1.0f, bAvg);
-
-                // Write the color to the ledColours buffer
-                ledColours[x * 3 + 0] = r; // Red
-                ledColours[x * 3 + 1] = g; // Green
-                ledColours[x * 3 + 2] = b; // Blue
-            }
-
-            private float Scale(float t, float min, float max)
-            {
-                return min + t * (max - min);
-            }
-        }
+        
     }
 }

@@ -57,6 +57,14 @@ namespace BitFrost
             Debug.WriteLine($"Effect Name Received: {effectName}.");
             switch(effectName.ToLower()) 
             {
+                case "hello":
+                    Debug.WriteLine("Triggering Hello Shader Effect");
+                    if (CurrentEffect != TestHelloShader)
+                    {
+                        CurrentEffect = TestHelloShader;   
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
                 case "fft-glow":
                     Debug.WriteLine("Triggering FFT Glow Effect");
                     CurrentEffect = StartFFTGlow;
@@ -78,6 +86,8 @@ namespace BitFrost
                     CurrentEffect?.Invoke();
                     break;
             }
+
+            
         }
 
 
@@ -116,7 +126,65 @@ namespace BitFrost
 
             byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
 
-            UpdatePatch(processedData, totalLeds);
+            try
+            {
+                UpdatePatch(processedData, totalLeds);
+            }
+            catch
+            {
+
+            }
+            
+
+        }
+
+
+        private void TestHelloShader()
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            HelloShader(currentLedData);
+        }
+
+        private void HelloShader(byte[] ledData)
+        {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+            // Debug.WriteLine($"Starting processing at {DateTime.Now}");
+
+            int totalLEDs = Patch.GetTotalLEDs();
+            float[] LEDColours = new float[ledData.Length];
+
+            using var graphicsDevice = GraphicsDevice.GetDefault();
+
+            using var buffer = graphicsDevice.AllocateReadWriteBuffer(LEDColours);
+
+            var shader = new Shaders.HelloShader(
+                buffer,
+                (float)DateTime.Now.TimeOfDay.TotalMilliseconds
+                );
+            try
+            {
+                graphicsDevice.For(WorkspaceWidth, shader);
+
+                buffer.CopyTo(LEDColours);
+
+                byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
+
+                UpdatePatch(processedData, totalLEDs);
+            }
+            catch (Exception e)
+            {
+                // Debug.WriteLine(e.Message.ToString());
+                return;
+            }
+            finally
+            {
+                IsProcessing = false;
+                buffer.Dispose();
+            }
 
         }
 
@@ -169,10 +237,11 @@ namespace BitFrost
                 byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
 
                 UpdatePatch(processedData, totalLeds);
+
             }
             catch(Exception e)
             {
-                Debug.WriteLine(e.Message.ToString());
+                // Debug.WriteLine(e.Message.ToString());
             }
             finally
             {
@@ -196,48 +265,48 @@ namespace BitFrost
 
         private void FFTGlowEffect(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
         {
-            int totalLEDs = ledData.Length / 3;
-            float[] LEDColours = new float[ledData.Length];
-            float force = 3.0f;
+            //int totalLEDs = ledData.Length / 3;
+            //float[] LEDColours = new float[ledData.Length];
+            //float force = 3.0f;
 
-            var graphicsDevice = GraphicsDevice.GetDefault();
+            //var graphicsDevice = GraphicsDevice.GetDefault();
 
-            var buffer = graphicsDevice.AllocateReadWriteBuffer(LEDColours);
-            var magBuffer = graphicsDevice.AllocateReadOnlyBuffer(magnitudeBuffer);
-            var freqBuffer = graphicsDevice.AllocateReadOnlyBuffer(frequencyBuffer);
+            //var buffer = graphicsDevice.AllocateReadWriteBuffer(LEDColours);
+            //var magBuffer = graphicsDevice.AllocateReadOnlyBuffer(magnitudeBuffer);
+            //var freqBuffer = graphicsDevice.AllocateReadOnlyBuffer(frequencyBuffer);
 
-            try
-            {
-                Debug.WriteLine("Trying to run FFTGlow");
-                var shader = new Shaders.FFTGlow(
-                    buffer,
-                    magBuffer,
-                    freqBuffer,
-                    WorkspaceWidth,
-                    WorkspaceHeight,
-                    force
-                );
+            //try
+            //{
+            //    Debug.WriteLine("Trying to run FFTGlow");
+            //    var shader = new Shaders.FFTGlow(
+            //        buffer,
+            //        magBuffer,
+            //        freqBuffer,
+            //        WorkspaceWidth,
+            //        WorkspaceHeight,
+            //        force
+            //    );
 
-                //GraphicsDevice.GetDefault().For(WorkspaceWidth, shader);
-                 graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader );
+            //    //GraphicsDevice.GetDefault().For(WorkspaceWidth, shader);
+            //    graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader );
 
-                buffer.CopyTo(LEDColours, 0);
+            //    buffer.CopyTo(LEDColours, 0);
 
-                byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
+            //    byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
 
-                UpdatePatch(processedData, totalLEDs);
-            }
-            catch(Exception e)
-            {
-                Debug.WriteLine($"{e.Message}");
-            }
-            finally
-            {
-                // Dispose buffers to avoid memory leaks
-                buffer.Dispose();
-                magBuffer.Dispose();
-                freqBuffer.Dispose();
-            }
+            //    UpdatePatch(processedData, totalLEDs);
+            //}
+            //catch(Exception e)
+            //{
+            //    Debug.WriteLine($"{e.Message}");
+            //}
+            //finally
+            //{
+            //    // Dispose buffers to avoid memory leaks
+            //    buffer.Dispose();
+            //    magBuffer.Dispose();
+            //    freqBuffer.Dispose();
+            //}
         }
 
 
@@ -260,6 +329,7 @@ namespace BitFrost
                 return;
             }
             IsProcessing = true;
+            // Debug.WriteLine($"Starting processing at {DateTime.Now}");
 
             int totalLEDs = Patch.GetTotalLEDs();
             float[] LEDColours = new float[ledData.Length];
@@ -270,7 +340,7 @@ namespace BitFrost
             {
                 UpdateBuffers(magnitudebuffer, frequencyBuffer, totalLEDs);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Debug.WriteLine(e.Message.ToString());
                 return;
@@ -281,13 +351,13 @@ namespace BitFrost
             var shader = new Shaders.AverageColourShader(
                     _ledBuffer,
                     _magBuffer,
-                    _freqBuffer,
-                    gain
+                    WorkspaceWidth,
+                    6
                     );
 
             graphicsDevice.For(WorkspaceWidth, shader);
 
-            if(_ledBuffer.Length > LEDColours.Length)
+            if (_ledBuffer.Length > LEDColours.Length)
             {
                 throw new ArgumentOutOfRangeException($"Buffer size: {_ledBuffer.Length} exceeds destination array length: {nameof(LEDColours)}");
             }
@@ -300,12 +370,13 @@ namespace BitFrost
 
                 UpdatePatch(processedData, totalLEDs);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Debug.WriteLine(e.Message.ToString());
             }
             finally
             {
+                // Debug.WriteLine($"Finished processing at {DateTime.Now}");
                 IsProcessing = false;
             }
 
@@ -329,7 +400,7 @@ namespace BitFrost
                 {
                     var coordinate = Patch.GetLEDLocation(i);
                     Patch.SetDMXValue(coordinate.Item1, coordinate.Item2, CurrentLedData);
-                    // Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
+                    Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
                 }
                 catch(Exception e)
                 {
@@ -339,7 +410,8 @@ namespace BitFrost
             }
 
             Debug.WriteLine("Refreshing the patch");
-            Patch.GetCurrentDMXData();
+
+            Patch.SendDMX();
         }
 
 

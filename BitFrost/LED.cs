@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 
 namespace BitFrost
@@ -62,12 +63,14 @@ namespace BitFrost
             data[0] = Red;
             data[1] = Green;
             data[2] = Blue;
+            Debug.WriteLine($"Getting {data[0]} {data[1]} {data[2]} from LED profile");
 
             return data;
         }
 
         public override void SetDMXData(byte[] data)
         {
+            // Debug.WriteLine($"Setting Channels {data[0]} {data[1]} {data[2]}");
             Red = data[0];
             Green = data[1];
             Blue = data[2];

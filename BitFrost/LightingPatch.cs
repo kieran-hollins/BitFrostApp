@@ -186,11 +186,11 @@ namespace BitFrost
 
         public byte[] GetCurrentDMXData()
         {
-            if (!IsAvailable)
-            {
-                return new byte[512];
-            }
-            IsAvailable = false;
+            //if (!IsAvailable)
+            //{
+            //    return new byte[512];
+            //}
+            //IsAvailable = false;
 
             byte[] dmxData = new byte[512];
             foreach(var place in patch)
@@ -207,24 +207,43 @@ namespace BitFrost
 
             }
 
-            OnLEDUpdate?.Invoke(dmxData);
-
-            IsAvailable = true;
-
             return dmxData;
+        }
+
+        public void SendDMX()
+        {
+            byte[] dmxData = new byte[512]; // Initialize the DMX data array.
+
+            foreach (var place in patch)
+            {
+                var led = place.Value;
+                int baseAddress = led.StartDMXAddress - 1; // Adjust for 0-based indexing.
+
+                // Retrieve the DMX data for the current LED.
+                byte[] ledData = led.LEDProfile.GetDMXData();
+
+                // Ensure we are not exceeding the bounds of the DMX array.
+                if (baseAddress >= 0 && baseAddress + ledData.Length <= 512)
+                {
+                    // Copy the LED's DMX data into the correct position in the DMX array.
+                    Array.Copy(ledData, 0, dmxData, baseAddress, ledData.Length);
+                }
+                else
+                {
+                    // If out of bounds, log the error for debugging purposes.
+                    Debug.WriteLine($"LED at {place.Key} with DMX address {led.StartDMXAddress} exceeds DMX array bounds.");
+                }
+            }
+
+            Debug.WriteLine("Invoking DMX Trigger");
+            OnLEDUpdate?.Invoke(dmxData); // Trigger the LED update event with the aggregated DMX data.
         }
 
         public void SetDMXValue(int x, int y, byte[] data)
         {
-            if(!IsAvailable)
-            {
-                return;
-            }
-            IsAvailable = false;
-
             var coordinates = (x, y);
 
-            if (! patch.ContainsKey(coordinates))
+            if (!patch.ContainsKey(coordinates))
             {
                 return;
             }
@@ -235,9 +254,9 @@ namespace BitFrost
             }
 
             var led = patch[coordinates];
+            Debug.WriteLine($"DMX address: {led.StartDMXAddress}");
             led.LEDProfile.SetDMXData(data);
-
-            IsAvailable = true;
+            
         }
 
     }

@@ -1,4 +1,5 @@
 using BitFrost;
+using NAudio.SoundFont;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
@@ -17,95 +18,42 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Setup
-// ArtNetController Controller = new("172.0.0.1", 0, LightingPatch.Instance);
+ArtNetController Controller = new("127.0.0.1", 0, LightingPatch.Instance);
+Controller.Enable();
 
-//app.MapGet("api/controller", () =>
-//{
-//    string jsonString = JsonSerializer.Serialize(Controller);
-//    return jsonString;
-//});
+LightingPatch Patch = LightingPatch.Instance;
+Patch.ClearAll();
+RGB rgb = new();
+Patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
 
-//app.MapGet("api/demo", () =>
-//{
-//    LightingPatch patch = LightingPatch.Instance;
-//    patch.ClearAll();
-//    FXGenerator generator = FXGenerator.Instance;
-//    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-//    controller.Enable();
-//    RGB rgb = new();
-//    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-//    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-//    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-//    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-//    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
+FXGenerator Generator = FXGenerator.Instance;
+Generator.WorkspaceHeight = 1; Generator.WorkspaceWidth = 30;
 
-//    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
 
-//    generator.StaticColour(Utils.GetRandomColour());
-//});
+
+app.MapGet("api/demo", () =>
+{
+    Generator.ApplyMovementEffect("hello");
+});
 
 app.MapGet("api/demo/shader-test-fft", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
-
-    generator.WorkspaceHeight = 1; generator.WorkspaceWidth = 30;
-
-    generator.ApplyMovementEffect("fft-glow");
+    Generator.ApplyMovementEffect("fft-glow");
 });
 
 app.MapGet("api/demo/shader-test-waves", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
-
-    generator.WorkspaceHeight = 1; generator.WorkspaceWidth = 30;
-
-    generator.ApplyMovementEffect("waves");
+    Generator.ApplyMovementEffect("waves");
 });
 
 app.MapGet("api/demo/shader-red", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.ApplyMovementEffect("red");
+    Generator.ApplyMovementEffect("red");
 });
 
 app.MapGet("api/demo/shader-average", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
-
-    generator.WorkspaceHeight = 1; generator.WorkspaceWidth = 30;
-
-    generator.ApplyMovementEffect("average");
+    Generator.ApplyMovementEffect("average");
 });
 
 app.MapGet("api/demo/flash", () =>

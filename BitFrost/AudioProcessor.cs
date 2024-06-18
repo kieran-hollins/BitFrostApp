@@ -48,7 +48,7 @@ namespace BitFrost
             // Design the band-pass filter (20 Hz to 15,000 Hz)
             int filterOrder = 128; // Adjust order as needed
             double lowCutoff = 20.0 / (sampleRate / 2.0);
-            double highCutoff = 15000.0 / (sampleRate / 2.0);
+            double highCutoff = 3000.0 / (sampleRate / 2.0);
             double[] coefficients = MathNet.Filtering.FIR.FirCoefficients.BandPass(filterOrder, lowCutoff, highCutoff);
             BandPassFilter = new OnlineFirFilter(coefficients);
         }
@@ -137,8 +137,6 @@ namespace BitFrost
         {
             OnAudioBufferEvent?.Invoke(MagnitudeBuffer, FrequencyBuffer);
         }
-
-
 
     }
 }
