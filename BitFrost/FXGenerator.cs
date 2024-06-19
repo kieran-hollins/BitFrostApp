@@ -58,10 +58,10 @@ namespace BitFrost
             switch(effectName.ToLower()) 
             {
                 case "hello":
-                    Debug.WriteLine("Triggering Hello Shader Effect");
-                    if (CurrentEffect != TestHelloShader)
+                    Debug.WriteLine("Triggering Half Red Half Blue");
+                    if (CurrentEffect != TestHalfRedHalfBlue)
                     {
-                        CurrentEffect = TestHelloShader;   
+                        CurrentEffect = TestHalfRedHalfBlue;   
                     }
                     CurrentEffect?.Invoke();
                     break;
@@ -111,7 +111,7 @@ namespace BitFrost
 
         private void RedShaderEffect(byte[] ledData)
         {
-            int totalLeds = ledData.Length / 3; // Assuming RGB for now...
+            int totalLeds = WorkspaceWidth; // Assuming RGB for now...
             float[] ledColours = new float[ledData.Length];
 
             using (var buffer = GraphicsDevice.GetDefault().AllocateReadWriteBuffer(ledColours))
@@ -134,8 +134,37 @@ namespace BitFrost
             {
 
             }
-            
+        }
 
+        private void TestHalfRedHalfBlue()
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            HalfRedHalfBlue(currentLedData);
+        }
+
+        private void HalfRedHalfBlue(byte[] ledData)
+        {
+            float[] ledColours = new float[ledData.Length];
+            using var graphicsDevice = GraphicsDevice.GetDefault();
+
+            using var buffer = graphicsDevice.AllocateReadWriteBuffer(ledColours);
+
+            var shader = new Shaders.HalfRedHalfBlue(buffer, WorkspaceWidth);
+
+            graphicsDevice.For(WorkspaceWidth, shader);
+
+            buffer.CopyTo(ledColours);
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            try
+            {
+                UpdatePatch(processedData, WorkspaceWidth * 3);
+            }
+            catch
+            {
+
+            }
         }
 
 
@@ -387,7 +416,7 @@ namespace BitFrost
         private void UpdatePatch(byte[] processedData, int totalLeds)
         {
             Debug.WriteLine("Updating Patch Data");
-            for (int i = 1; i < totalLeds; i += 3)
+            for (int i = 0; i < totalLeds - 1; i += 3)
             {
                 byte[] CurrentLedData = new byte[3];
 
@@ -398,9 +427,9 @@ namespace BitFrost
 
                 try
                 {
-                    var coordinate = Patch.GetLEDLocation(i);
+                    var coordinate = Patch.GetLEDLocation(i + 1);
                     Patch.SetDMXValue(coordinate.Item1, coordinate.Item2, CurrentLedData);
-                    Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
+                    // Debug.WriteLine($"Setting ({coordinate.Item1}, {coordinate.Item2}) to {CurrentLedData[0]} {CurrentLedData[1]} {CurrentLedData[2]}");
                 }
                 catch(Exception e)
                 {

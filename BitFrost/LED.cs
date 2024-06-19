@@ -63,7 +63,7 @@ namespace BitFrost
             data[0] = Red;
             data[1] = Green;
             data[2] = Blue;
-            Debug.WriteLine($"Getting {data[0]} {data[1]} {data[2]} from LED profile");
+            Debug.WriteLine($"DMX GET: R:{this.Red} G:{this.Green} B:{this.Blue}");
 
             return data;
         }
@@ -74,6 +74,8 @@ namespace BitFrost
             Red = data[0];
             Green = data[1];
             Blue = data[2];
+
+            Debug.WriteLine($"DMX SET: R:{this.Red} G:{this.Green} B:{this.Blue}");
         }
     }
 

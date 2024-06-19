@@ -29,6 +29,26 @@ namespace BitFrost
 
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct HalfRedHalfBlue : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly int Width;
+
+            public void Execute()
+            {
+                int i = ThreadIds.X;
+
+                LEDColours[i * 3 + 0] = i * 5; // Red
+                LEDColours[i * 3 + 1] = i * 5; // Green
+                LEDColours[i * 3 + 2] = i * 5; // Blue
+
+            }
+        }
+
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
         public readonly partial struct HelloShader : IComputeShader
         {
             public readonly ReadWriteBuffer<float> LEDColours;

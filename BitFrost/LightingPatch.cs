@@ -212,31 +212,28 @@ namespace BitFrost
 
         public void SendDMX()
         {
-            byte[] dmxData = new byte[512]; // Initialize the DMX data array.
+            byte[] dmxData = new byte[512];
 
             foreach (var place in patch)
             {
                 var led = place.Value;
+                // Debug.WriteLine($"GET: DMX address: {led.StartDMXAddress} Data: {led.LEDProfile.GetDMXData()[0]} {led.LEDProfile.GetDMXData()[1]} {led.LEDProfile.GetDMXData()[2]} ");
                 int baseAddress = led.StartDMXAddress - 1; // Adjust for 0-based indexing.
 
-                // Retrieve the DMX data for the current LED.
                 byte[] ledData = led.LEDProfile.GetDMXData();
 
-                // Ensure we are not exceeding the bounds of the DMX array.
                 if (baseAddress >= 0 && baseAddress + ledData.Length <= 512)
                 {
-                    // Copy the LED's DMX data into the correct position in the DMX array.
                     Array.Copy(ledData, 0, dmxData, baseAddress, ledData.Length);
                 }
                 else
                 {
-                    // If out of bounds, log the error for debugging purposes.
                     Debug.WriteLine($"LED at {place.Key} with DMX address {led.StartDMXAddress} exceeds DMX array bounds.");
                 }
             }
 
             Debug.WriteLine("Invoking DMX Trigger");
-            OnLEDUpdate?.Invoke(dmxData); // Trigger the LED update event with the aggregated DMX data.
+            OnLEDUpdate?.Invoke(dmxData);
         }
 
         public void SetDMXValue(int x, int y, byte[] data)
@@ -248,15 +245,20 @@ namespace BitFrost
                 return;
             }
 
-            if (data.Length > 4)
+            if (data.Length > 3)
             {
                 return;
             }
 
             var led = patch[coordinates];
-            Debug.WriteLine($"DMX address: {led.StartDMXAddress}");
+            Debug.WriteLine($"SET: DMX address: {led.StartDMXAddress} Data: {data[0]} {data[1]} {data[2]} ");
             led.LEDProfile.SetDMXData(data);
-            
+
+
+            // Testing First Element in patch
+            //var testLed = patch[(0, 0)];
+            //byte[] testData = testLed.LEDProfile.GetDMXData();
+            //Debug.WriteLine($"GET - First Fixture Channels: {testData[0]} {testData[1]} {testData[2]}");
         }
 
     }
