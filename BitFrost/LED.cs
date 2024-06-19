@@ -15,6 +15,8 @@ namespace BitFrost
             LEDProfile = ledProfile;
         }
 
+        public LED() { LEDProfile = new RGB(); StartDMXAddress = 513; }
+
         public static LED CreateRGBLED(int startDMXAddress)
         {
             return new LED(startDMXAddress, new RGB());
@@ -45,15 +47,26 @@ namespace BitFrost
         public override int Channels => 3;
         public override string Type => "RGB";
 
-        public byte Red { get; set; }
-        public byte Green { get; set; }
-        public byte Blue { get; set; }
-        
+        private byte r;
+        private byte g;
+        private byte b;
+
+        public byte Red { get { return r; } set { r = value; } }
+        public byte Green { get { return g; } set { g = value; } }
+        public byte Blue { get { return b; } set { b = value; } }
+
         public void ConvertColour(byte r, byte g, byte b)
         {
             Red = r;
             Green = g;
             Blue = b;
+        }
+
+        public void SetColours(byte R, byte G, byte B)
+        {
+            r = R;
+            g = G;
+            b = B;
         }
 
         public override byte[] GetDMXData()
@@ -63,7 +76,7 @@ namespace BitFrost
             data[0] = Red;
             data[1] = Green;
             data[2] = Blue;
-            Debug.WriteLine($"DMX GET: R:{this.Red} G:{this.Green} B:{this.Blue}");
+            // Debug.WriteLine($"DMX GET: R:{this.Red} G:{this.Green} B:{this.Blue}");
 
             return data;
         }
@@ -75,7 +88,7 @@ namespace BitFrost
             Green = data[1];
             Blue = data[2];
 
-            Debug.WriteLine($"DMX SET: R:{this.Red} G:{this.Green} B:{this.Blue}");
+            // Debug.WriteLine($"DMX SET: R:{this.Red} G:{this.Green} B:{this.Blue}");
         }
     }
 

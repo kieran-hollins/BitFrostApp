@@ -8,16 +8,16 @@ namespace BitFrost
     public sealed class LightingPatch
     {
         private readonly object _lock = new();
-        private Dictionary<(int x, int y), LED> patch;
-        private Dictionary<int, (int x, int y)> dmxAddressMap;
+        private static  Dictionary<(int x, int y), LED> patch = new();
+        private static Dictionary<int, (int x, int y)> dmxAddressMap = new();
         public delegate void LEDUpdateHandler(byte[] dmxData);
         public event LEDUpdateHandler? OnLEDUpdate;
         public bool IsAvailable;
 
         private LightingPatch()
         {
-            patch = new Dictionary<(int x, int y), LED> ();
-            dmxAddressMap = new Dictionary<int, (int x, int y)> ();
+            //patch = new Dictionary<(int x, int y), LED> ();
+            //dmxAddressMap = new Dictionary<int, (int x, int y)> ();
             IsAvailable = true;
         }
 
@@ -141,7 +141,7 @@ namespace BitFrost
         }
 
         // Adds an LED strip from left to right
-        public void AddLEDLineHorizontal(int x, int y, int startAddress, int quantity, LEDProfile type)
+        public void AddRGBLEDLineHorizontal(int x, int y, int startAddress, int quantity)
         {
             if (!IsAvailable)
             {
@@ -154,7 +154,7 @@ namespace BitFrost
 
             for (int i = x; i < x + quantity; i++)
             {
-                LED led = new(addressIndex, type);
+                LED led = new(addressIndex, new RGB());
 
                 try
                 {
@@ -250,9 +250,15 @@ namespace BitFrost
                 return;
             }
 
-            var led = patch[coordinates];
-            Debug.WriteLine($"SET: DMX address: {led.StartDMXAddress} Data: {data[0]} {data[1]} {data[2]} ");
-            led.LEDProfile.SetDMXData(data);
+            LED led = patch.Where(v => v.Key == coordinates).FirstOrDefault().Value;
+
+            if (led != null && led != new LED())
+            {
+                Debug.WriteLine($"SET: DMX address: {led.StartDMXAddress} Data: {data[0]} {data[1]} {data[2]} ");
+                led.LEDProfile.SetDMXData(data);
+            } 
+            
+            
 
 
             // Testing First Element in patch

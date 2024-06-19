@@ -23,8 +23,7 @@ Controller.Enable();
 
 LightingPatch Patch = LightingPatch.Instance;
 Patch.ClearAll();
-RGB rgb = new();
-Patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
+Patch.AddRGBLEDLineHorizontal(0, 0, 1, 30);
 
 FXGenerator Generator = FXGenerator.Instance;
 Generator.WorkspaceHeight = 1; Generator.WorkspaceWidth = 30;
@@ -58,22 +57,7 @@ app.MapGet("api/demo/shader-average", () =>
 
 app.MapGet("api/demo/flash", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("colour-flash");
+    Generator.ApplyMovementEffect("red-flash");
 });
 
 app.MapGet("api/demo/bounce", () =>
@@ -83,12 +67,6 @@ app.MapGet("api/demo/bounce", () =>
     FXGenerator generator = FXGenerator.Instance;
     ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
     controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
 
     generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
 
@@ -103,12 +81,6 @@ app.MapGet("api/demo/s2l", () =>
     FXGenerator generator = FXGenerator.Instance;
     ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
     controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
 
     generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
 
@@ -129,12 +101,7 @@ app.MapGet("api/demo/rainbow-audio", () =>
     FXGenerator generator = FXGenerator.Instance;
     ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
     controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
+
 
     generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
     generator.ApplyMovementEffect("rainbow-audio");

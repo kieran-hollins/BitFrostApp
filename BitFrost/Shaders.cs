@@ -38,10 +38,54 @@ namespace BitFrost
             {
                 int i = ThreadIds.X;
 
-                LEDColours[i * 3 + 0] = i * 5; // Red
-                LEDColours[i * 3 + 1] = i * 5; // Green
-                LEDColours[i * 3 + 2] = i * 5; // Blue
+                float val = Hlsl.Sin(i);
 
+                LEDColours[i * 3 + 0] = Hlsl.Lerp(0.0f, 1.0f, val); // Red
+                LEDColours[i * 3 + 1] = Hlsl.Lerp(0.0f, 1.0f, val); // Green
+                LEDColours[i * 3 + 2] = Hlsl.Lerp(0.0f, 1.0f, val); ; // Blue
+
+            }
+        }
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct BeatFlashRed : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> frequencyBuffer;
+            public readonly float threshold; // Threshold to detect beat
+            public readonly float fadeOutSpeed; // Speed at which the color fades out
+
+            public void Execute()
+            {
+                // Get the current index
+                int index = ThreadIds.X;
+                float magnitude = 0.0f;
+
+                for (int i = 0; i < magnitudeBuffer.Length; i++)
+                {
+                    if (magnitudeBuffer[i] > magnitude)
+                    {
+                        magnitude = magnitudeBuffer[i];
+                    }
+                }
+
+                // Check if the magnitude exceeds the threshold (indicating a beat)
+                if (magnitude > threshold)
+                {
+                    // Set the LED color to red
+                    LEDColours[index * 3] = 1.0f; // Red
+                    LEDColours[index * 3 + 1] = 0.0f; // Green
+                    LEDColours[index * 3 + 2] = 0.0f; // Blue
+                }
+                else
+                {
+                    // Fade out effect
+                    LEDColours[index * 3] = Hlsl.Max(0.0f, LEDColours[index * 3] - fadeOutSpeed);
+                    LEDColours[index * 3 + 1] = Hlsl.Max(0.0f, LEDColours[index * 3 + 1] - fadeOutSpeed);
+                    LEDColours[index * 3 + 2] = Hlsl.Max(0.0f, LEDColours[index * 3 + 2] - fadeOutSpeed);
+                }
             }
         }
 
@@ -58,9 +102,9 @@ namespace BitFrost
             {
                 int x = ThreadIds.X;
 
-                float r = 0.25f + 0.75f * Hlsl.Cos(time + (float)Math.PI * 0.25f);
-                float g = 0.25f + 0.75f * Hlsl.Cos(time + 2 * (float)Math.PI * 0.25f);
-                float b = 0.25f + 0.75f * Hlsl.Cos(time + 4 * (float)Math.PI * 0.25f);
+                float r = 0.5f + 0.5f * Hlsl.Cos(time + (float)Math.PI * 0.25f);
+                float g = 0.5f + 0.5f * Hlsl.Cos(time + 2 * (float)Math.PI * 0.25f);
+                float b = 0.5f + 0.5f * Hlsl.Cos(time + 4 * (float)Math.PI * 0.25f);
 
                 LEDColours[x * 3 + 0] = r; // Red
                 LEDColours[x * 3 + 1] = g; // Green
