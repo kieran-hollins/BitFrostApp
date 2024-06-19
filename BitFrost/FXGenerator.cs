@@ -412,7 +412,7 @@ namespace BitFrost
         }
 
 
-
+        // Update
         private void UpdatePatch(byte[] processedData, int totalLeds)
         {
             Debug.WriteLine("Updating Patch Data");
