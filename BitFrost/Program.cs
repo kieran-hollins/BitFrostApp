@@ -60,6 +60,11 @@ app.MapGet("api/demo/flash", () =>
     Generator.ApplyMovementEffect("red-flash");
 });
 
+app.MapGet("api/demo/truchet", () =>
+{
+    Generator.ApplyMovementEffect("truchet");
+});
+
 app.MapGet("api/demo/bounce", () =>
 {
     LightingPatch patch = LightingPatch.Instance;

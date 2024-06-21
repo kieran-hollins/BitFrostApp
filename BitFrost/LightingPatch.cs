@@ -41,72 +41,65 @@ namespace BitFrost
 
         public void AddLED(int x, int y, LED led)
         {
-            lock ( _lock )
+            var coordinates = (x, y);
+            var startDMXAddress = led.StartDMXAddress;
+
+            // Throw exception if LED already exists in this location
+            if (patch.ContainsKey(coordinates))
             {
-                var coordinates = (x, y);
-                var startDMXAddress = led.StartDMXAddress;
-
-                if (patch.ContainsKey(coordinates))
-                {
-                    throw new ArgumentException($"LED already existing at coordinates ({x}, {y}).");
-                }
-
-                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-                {
-                    if (dmxAddressMap.ContainsKey(i))
-                    {
-                        throw new ArgumentException($"DMX address {i} is already in use.");
-                    }
-                }
-
-                patch.Add(coordinates, led);
-
-                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-                {
-                    dmxAddressMap.Add(i, coordinates);
-                }
-
-                // OnLEDUpdate?.Invoke(GetCurrentDMXData());
+                throw new ArgumentException($"LED already existing at coordinates ({x}, {y}).");
             }
+
+            // Each fixture channel requires a DMX address but each channel shares the same location
+            for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
+            {
+                if (dmxAddressMap.ContainsKey(i))
+                {
+                    throw new ArgumentException($"DMX address {i} is already in use.");
+                }
+
+                dmxAddressMap.Add(i, coordinates);
+            }
+
+            // Add fixture to patch at location (x, y)
+            patch.Add(coordinates, led);
+
         }
 
         public void RemoveLED(int x, int y)
         {
-            lock ( _lock )
+            var coordinates = (x, y);
+
+            // Throw exception if no LED exists at this location
+            if (!patch.ContainsKey(coordinates))
             {
-                var coordinates = (x, y);
-
-                if (!patch.ContainsKey(coordinates))
-                {
-                    throw new ArgumentException($"No LED at coordinates ({x}, {y}).");
-                }
-
-                int startDMXAddress = GetStartDMXChannel(x, y);
-                var led = patch[coordinates];
-
-                for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
-                {
-                    dmxAddressMap.Remove(i);
-                }
-
-                patch.Remove(coordinates);
-
-                OnLEDUpdate?.Invoke(GetCurrentDMXData());
+                throw new ArgumentException($"No LED at coordinates ({x}, {y}).");
             }
+
+            // GetStartDMXChannel() is a helper function, which will retrieve the start address for the fixture at location (x, y)
+            int startDMXAddress = GetStartDMXChannel(x, y);
+            var led = patch[coordinates];
+
+            // Remove each channel from the dmx address map 
+            for (int i = startDMXAddress; i < startDMXAddress + led.LEDProfile.Channels; i++)
+            {
+                dmxAddressMap.Remove(i);
+            }
+
+            // Remove the fixture from patch at location (x, y)
+            patch.Remove(coordinates);         
         }
 
         public int GetTotalLEDs()
         {
+            // Actually returns number of DMX channels
             return dmxAddressMap.Count;
         }
 
         public void ClearAll()
         {
-            lock (_lock)
-            {
-                patch.Clear();
-                dmxAddressMap.Clear();
-            }
+            patch.Clear();
+            dmxAddressMap.Clear();
         }
 
         // Returns the coordinate of the LED based on the DMX address map
@@ -186,12 +179,6 @@ namespace BitFrost
 
         public byte[] GetCurrentDMXData()
         {
-            //if (!IsAvailable)
-            //{
-            //    return new byte[512];
-            //}
-            //IsAvailable = false;
-
             byte[] dmxData = new byte[512];
             foreach(var place in patch)
             {
@@ -250,7 +237,7 @@ namespace BitFrost
                 return;
             }
 
-            LED led = patch.Where(v => v.Key == coordinates).FirstOrDefault().Value;
+            LED led = patch[coordinates];
 
             if (led != null && led != new LED())
             {
@@ -258,13 +245,6 @@ namespace BitFrost
                 led.LEDProfile.SetDMXData(data);
             } 
             
-            
-
-
-            // Testing First Element in patch
-            //var testLed = patch[(0, 0)];
-            //byte[] testData = testLed.LEDProfile.GetDMXData();
-            //Debug.WriteLine($"GET - First Fixture Channels: {testData[0]} {testData[1]} {testData[2]}");
         }
 
     }

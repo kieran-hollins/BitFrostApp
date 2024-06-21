@@ -93,6 +93,14 @@ namespace BitFrost
                     }
                     CurrentEffect?.Invoke();
                     break;
+                case "truchet":
+                    Debug.WriteLine("Triggering Truchet");
+                    if (CurrentEffect != StartTruchetShader)
+                    {
+                        CurrentEffect = StartTruchetShader;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
             }     
         }
 
@@ -175,6 +183,92 @@ namespace BitFrost
 
 
 
+        private void StartTruchetShader()
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            TruchetShader(currentLedData);
+            
+        }
+
+        private void TruchetShader(byte[] ledData)
+        {
+            float[] ledColours = new float[ledData.Length];
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            var buffer = graphicsDevice.AllocateReadWriteBuffer(ledColours);
+
+            var shader = new Shaders.Truchet(
+                buffer,
+                (float)DateTime.Now.Millisecond,
+                WorkspaceWidth,
+                WorkspaceHeight
+                );
+
+            graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
+
+            buffer.CopyTo(ledColours);
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            try
+            {
+                UpdatePatch(processedData, WorkspaceWidth * 3);
+            }
+            catch
+            {
+
+            }
+        }
+
+
+        private void StartRobocop()
+        {
+            AudioProcessor.OnAudioBufferEvent += RobocopShader;
+            AudioProcessor.Start();
+        }
+
+        private void RobocopShader(float[] magnitudebuffer, float[] frequencyBuffer)
+        {
+            byte[] currentLEDData = Patch.GetCurrentDMXData();
+            RobocopEffect(currentLEDData, magnitudebuffer, frequencyBuffer);
+        }
+
+        private void RobocopEffect(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
+            int totalLEDs = Patch.GetTotalLEDs();
+            float[] ledColours = new float[totalLEDs];
+
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            UpdateBuffers(magnitudeBuffer, frequencyBuffer, WorkspaceWidth * 3);
+
+            var shader = new Shaders.Robocop(
+                _ledBuffer,
+                _magBuffer,
+                _freqBuffer,
+                WorkspaceWidth,
+                DateTime.Today.TimeOfDay.Milliseconds
+                );
+
+            graphicsDevice.For(WorkspaceWidth, shader);
+
+            _ledBuffer.CopyTo(ledColours, 0, 0, _ledBuffer.Length);
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            UpdatePatch(processedData, totalLEDs);
+
+            IsProcessing = false;
+        }
+
+
+
         private void StartRedFlash()
         {
             AudioProcessor.OnAudioBufferEvent += RedFlashShader;
@@ -207,8 +301,7 @@ namespace BitFrost
                 _ledBuffer,
                 _magBuffer,
                 _freqBuffer,
-                0.050f,
-                50.0f
+                WorkspaceWidth
                 );
 
             graphicsDevice.For(WorkspaceWidth, shader);
