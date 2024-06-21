@@ -457,16 +457,19 @@ namespace BitFrost
 
             public void Execute()
             {
-                int x = ThreadIds.X;
+                float3 colourA = new float3(0.149f, 0.141f, 0.912f);
+                float3 colourB = new float3(1.0f, 0.833f, 0.224f);
 
-                float r = 0.5f + 0.5f * Hlsl.Cos(time + (float)Math.PI * 0.25f);
-                float g = 0.5f + 0.5f * Hlsl.Cos(time + 2 * (float)Math.PI * 0.25f);
-                float b = 0.5f + 0.5f * Hlsl.Cos(time + 4 * (float)Math.PI * 0.25f);
+                float3 colour = new float3(0.0f, 0.0f, 0.0f);
+                float pct = Hlsl.Abs(Hlsl.Sin(time));
 
-                LEDColours[x * 3 + 0] = r; // Red
-                LEDColours[x * 3 + 1] = g; // Green
-                LEDColours[x * 3 + 2] = b; // Blue
+                // Mix uses pct (a value from 0-1) to
+                // mix the two colors
+                colour = Hlsl.Lerp(colourA, colourB, pct);
 
+                LEDColours[ThreadIds.X * 3 + 0] = colour.X; // Red
+                LEDColours[ThreadIds.X * 3 + 1] = colour.Y; // Green
+                LEDColours[ThreadIds.X * 3 + 2] = colour.Z; // Blue
             }
         }
 

@@ -58,10 +58,10 @@ namespace BitFrost
             switch(effectName.ToLower()) 
             {
                 case "hello":
-                    Debug.WriteLine("Triggering Half Red Half Blue");
-                    if (CurrentEffect != TestHalfRedHalfBlue)
+                    Debug.WriteLine("Triggering Hello");
+                    if (CurrentEffect != TestHelloShader)
                     {
-                        CurrentEffect = TestHalfRedHalfBlue;   
+                        CurrentEffect = TestHelloShader;   
                     }
                     CurrentEffect?.Invoke();
                     break;
@@ -342,7 +342,7 @@ namespace BitFrost
 
             var shader = new Shaders.HelloShader(
                 buffer,
-                (float)DateTime.Now.TimeOfDay.TotalMilliseconds
+                (float)DateTime.Today.TimeOfDay.Milliseconds
                 );
             try
             {
