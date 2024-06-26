@@ -127,6 +127,154 @@ namespace BitFrost
         }
 
 
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.XY)]
+        public readonly partial struct Kaleidoscope : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly float time;
+            public readonly int width;
+            public readonly int height;
+            
+            float3 Pallete( float t )
+            {
+                float3 a = new(0.5f, 0.5f, 0.5f);
+                float3 b = new(0.5f, 0.5f, 0.5f);
+                float3 c = new(1.0f, 1.0f, 1.0f);
+                float3 d = new(0.263f, 0.416f, 0.557f);
+
+                return a + b * Hlsl.Cos(6.28318f * (c * t + d));
+            }
+            
+            public void Execute()
+            {
+                float w = width;
+                float h = height;
+                float2 wh = new(w, h);
+                float u = ThreadIds.X;
+                float v = ThreadIds.Y;
+                float2 uv = new(u, v);
+                
+                uv = (uv * 2.0f - wh) / h;
+                float2 uv0 = uv;
+                float3 finalColour = new float3(0.0f, 0.0f, 0.0f);
+
+                for (float i = 0.0f; i < 4.0f; i++)
+                {
+                    uv = Hlsl.Frac(uv * 1.5f) - 0.5f;
+
+                    float d = Hlsl.Length(uv) * Hlsl.Exp(-Hlsl.Length(uv0));
+
+                    float3 col = Pallete(Hlsl.Length(uv0) + i * 0.4f + time * 0.4f);
+
+                    d = Hlsl.Sin(d * 8.0f + time) / 8.0f;
+                    d = Hlsl.Abs(d);
+                    d = Hlsl.Pow(0.01f / d, 1.2f);
+
+                    finalColour += col * d;
+                }
+
+                
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.X; // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.Y; // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.Z; // Blue
+            }
+        }
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.XY)]
+        public readonly partial struct KaleidoscopeAudio : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> frequencyBuffer;
+            public readonly float time;
+            public readonly int width;
+            public readonly int height;
+
+            float ComputeSpectralCentroid()
+            {
+                float weightedSum = 0.0f;
+                float totalMagnitude = 0.0f;
+
+                for (int i = 0; i < frequencyBuffer.Length; i++ )
+                {
+                    if (magnitudeBuffer[i] > 0)
+                    {
+                        weightedSum += frequencyBuffer[i] * magnitudeBuffer[i];
+                        totalMagnitude += magnitudeBuffer[i];
+                    }
+                }
+
+                if (totalMagnitude == 0.0f)
+                {
+                    return 0.0f;
+                }
+
+                float spectralCentroid = weightedSum / totalMagnitude;
+                return spectralCentroid;
+            }
+
+            //float ComputeMagnitude()
+            //{
+                
+            //}
+
+            float3 Pallete(float t)
+            {
+                float3 a = new(0.5f, 0.5f, 0.5f);
+                float3 b = new(0.5f, 0.5f, 0.5f);
+                float3 c = new(1.0f, 1.0f, 1.0f);
+                float3 d = new(0.263f, 0.416f, 0.557f);
+
+                return a + b * Hlsl.Cos(6.28318f * (c * t + d));
+            }
+
+            public void Execute()
+            {
+                float w = width;
+                float h = height;
+                float2 wh = new(w, h);
+                float u = ThreadIds.X;
+                float v = ThreadIds.Y;
+                float2 uv = new(u, v);
+
+                int idx = (ThreadIds.Y * width + ThreadIds.X);
+
+                float spectralCentroid = ComputeSpectralCentroid();
+
+                uv = (uv * 2.0f - wh) / h;
+                float2 uv0 = uv;
+                float3 finalColour = new float3(0.0f, 0.0f, 0.0f);
+
+
+
+                for (float i = 0.0f; i < 4.0f; i++)
+                {
+                    uv = Hlsl.Frac(uv * 1.5f) - 0.5f;
+
+                    float d = Hlsl.Length(uv) * Hlsl.Exp(-Hlsl.Length(uv0));
+
+                    float3 col = Pallete(spectralCentroid); // Pallete(Hlsl.Length(uv0) + i * 0.4f + time * spectralCentroid);
+
+                    d = Hlsl.Sin(d * 8.0f + time) / 8.0f;
+                    d = Hlsl.Abs(d);
+                    d = Hlsl.Pow(0.01f / d, 1.2f);
+
+                    finalColour += col * d;
+                }
+
+                //float spectralCentroid = ComputeSpectralCentroid();
+                //float3 finalColour = new(spectralCentroid, spectralCentroid, spectralCentroid);
+
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0.3f, 1.0f, finalColour.X); // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = Hlsl.Lerp(0.3f, 1.0f, finalColour.Y); // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = Hlsl.Lerp(0.3f, .0f, finalColour.Z); // Blue
+            }
+        }
+
+
 
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.XY)]

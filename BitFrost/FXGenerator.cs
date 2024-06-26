@@ -101,6 +101,30 @@ namespace BitFrost
                     }
                     CurrentEffect?.Invoke();
                     break;
+                case "kaleidoscope":
+                    Debug.WriteLine("Triggering Kaleidoscope");
+                    if (CurrentEffect != StartKaleidoscope)
+                    {
+                        CurrentEffect = StartKaleidoscope;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
+                case "kaleidoscope-audio":
+                    Debug.WriteLine("Triggering Kaleidoscope Audio");
+                    if (CurrentEffect != StartKaleidoscopeAudio)
+                    {
+                        CurrentEffect = StartKaleidoscopeAudio;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
+                case "spectral-test":
+                    Debug.WriteLine("Triggering spectral test");
+                    if (CurrentEffect != CpuFlashTest)
+                    {
+                        CurrentEffect = CpuFlashTest;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
             }     
         }
 
@@ -114,6 +138,68 @@ namespace BitFrost
             _magBuffer = graphicsDevice.AllocateReadOnlyBuffer(magnitudeBuffer);
             _freqBuffer = graphicsDevice.AllocateReadOnlyBuffer(frequencyBuffer);
         }
+
+
+        private void CpuFlashTest()
+        {
+            AudioProcessor.OnAudioBufferEvent += AudioAvailable;
+            AudioProcessor.Start();
+        }
+
+        private void AudioAvailable(float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+
+            float spectralCentroid = ComputeSpectralCentroid(magnitudeBuffer, frequencyBuffer);
+
+            int freq = (int)Utils.Lerp(spectralCentroid, 0f, 20000f, 0f, 255f);
+
+            byte[] colour = new byte[3];
+
+            if (freq < 255 / 2)
+            {
+                colour[0] = (byte)((byte)freq * 2);
+                colour[1] = (byte)freq;
+            }
+            else
+            {
+                colour[1] = (byte)freq;
+                colour[2] = (byte)((byte)freq / 2);
+            }
+
+            for (int i = 0; i < currentLedData.Length; i += 3)
+            {
+
+            }
+
+            Debug.WriteLine($"Spectral Centroid: {spectralCentroid}");
+
+        }
+
+        private float ComputeSpectralCentroid(float[] magnitudes, float[] frequencies)
+        {
+            float weightedSum = 0.0f;
+            float totalMagnitude = 0.0f;
+
+            for (int i = 0; i < frequencies.Length; i++)
+            {
+                if (magnitudes[i] > 0)
+                {
+                    weightedSum += frequencies[i] * magnitudes[i];
+                    totalMagnitude += magnitudes[i];
+                }
+            }
+
+            if (totalMagnitude == 0.0f)
+            {
+                return 0.0f;
+            }
+
+            float spectralCentroid = weightedSum / totalMagnitude;
+            return spectralCentroid;
+        }
+
+        
 
 
 
@@ -166,6 +252,93 @@ namespace BitFrost
             var shader = new Shaders.HalfRedHalfBlue(buffer, WorkspaceWidth);
 
             graphicsDevice.For(WorkspaceWidth, shader);
+
+            buffer.CopyTo(ledColours);
+
+            byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+
+            try
+            {
+                UpdatePatch(processedData, WorkspaceWidth * 3);
+            }
+            catch
+            {
+
+            }
+        }
+
+
+        private void StartKaleidoscopeAudio()
+        {
+            AudioProcessor.OnAudioBufferEvent += KaleidoscopeAudioEffect;
+            AudioProcessor.Start();
+        }
+
+        private void KaleidoscopeAudioEffect(float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            KaleidoscopeAudioShader(currentLedData, magnitudeBuffer, frequencyBuffer);
+        }
+
+        private void KaleidoscopeAudioShader(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            int totalLEDs = Patch.GetTotalLEDs();
+            float[] LEDColours = new float[ledData.Length];
+
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            try
+            {
+                UpdateBuffers(magnitudeBuffer, frequencyBuffer, totalLEDs);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message.ToString());
+                return;
+            }
+
+            var shader = new Shaders.KaleidoscopeAudio(
+                _ledBuffer,
+                _magBuffer,
+                _freqBuffer,
+                (float)DateTime.Now.Millisecond,
+                WorkspaceWidth,
+                WorkspaceHeight
+                );
+
+            graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
+
+            _ledBuffer.CopyTo(LEDColours, 0, 0, _ledBuffer.Length);
+
+            byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
+
+            UpdatePatch(processedData, totalLEDs);
+
+            IsProcessing = false;
+        }
+
+
+        private void StartKaleidoscope()
+        {
+            byte[] currentLedData = Patch.GetCurrentDMXData();
+            KaleidoscopeShader(currentLedData);
+        }
+
+        private void KaleidoscopeShader(byte[] ledData)
+        {
+            float[] ledColours = new float[ledData.Length];
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            var buffer = graphicsDevice.AllocateReadWriteBuffer(ledColours);
+
+            var shader = new Shaders.Kaleidoscope(
+                buffer,
+                (float)DateTime.Now.Millisecond,
+                WorkspaceWidth,
+                WorkspaceHeight
+                );
+
+            graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
 
             buffer.CopyTo(ledColours);
 

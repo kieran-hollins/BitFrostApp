@@ -65,6 +65,21 @@ app.MapGet("api/demo/truchet", () =>
     Generator.ApplyMovementEffect("truchet");
 });
 
+app.MapGet("api/demo/kaleidoscope", () =>
+{
+    Generator.ApplyMovementEffect("kaleidoscope");
+});
+
+app.MapGet("api/demo/kaleidoscope-audio", () =>
+{
+    Generator.ApplyMovementEffect("kaleidoscope-audio");
+});
+
+app.MapGet("api/demo/spec-test", () =>
+{
+    Generator.ApplyMovementEffect("spectral-test");
+});
+
 app.MapGet("api/demo/bounce", () =>
 {
     LightingPatch patch = LightingPatch.Instance;
