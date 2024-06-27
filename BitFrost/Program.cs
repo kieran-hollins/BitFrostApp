@@ -18,7 +18,8 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Setup
-ArtNetController Controller = new("127.0.0.1", 0, LightingPatch.Instance);
+//ArtNetController Controller = new("127.0.0.1", 0, LightingPatch.Instance);
+ArtNetController Controller = new("192.168.0.10", 0, LightingPatch.Instance);
 Controller.Enable();
 
 LightingPatch Patch = LightingPatch.Instance;
@@ -32,42 +33,12 @@ Generator.WorkspaceHeight = 1; Generator.WorkspaceWidth = 30;
 
 app.MapGet("api/demo", () =>
 {
-    Generator.ApplyMovementEffect("hello");
+    
 });
 
-app.MapGet("api/demo/shader-test-fft", () =>
-{
-    Generator.ApplyMovementEffect("fft-glow");
-});
-
-app.MapGet("api/demo/shader-test-waves", () =>
-{
-    Generator.ApplyMovementEffect("waves");
-});
-
-app.MapGet("api/demo/shader-red", () =>
-{
-    Generator.ApplyMovementEffect("red");
-});
-
-app.MapGet("api/demo/shader-average", () =>
+app.MapGet("api/demo/fft", () =>
 {
     Generator.ApplyMovementEffect("average");
-});
-
-app.MapGet("api/demo/flash", () =>
-{
-    Generator.ApplyMovementEffect("red-flash");
-});
-
-app.MapGet("api/demo/truchet", () =>
-{
-    Generator.ApplyMovementEffect("truchet");
-});
-
-app.MapGet("api/demo/kaleidoscope", () =>
-{
-    Generator.ApplyMovementEffect("kaleidoscope");
 });
 
 app.MapGet("api/demo/kaleidoscope-audio", () =>
@@ -75,58 +46,14 @@ app.MapGet("api/demo/kaleidoscope-audio", () =>
     Generator.ApplyMovementEffect("kaleidoscope-audio");
 });
 
+app.MapGet("api/demo/truchet", () =>
+{
+    Generator.ApplyMovementEffect("truchet");
+});
+
 app.MapGet("api/demo/spec-test", () =>
 {
     Generator.ApplyMovementEffect("spectral-test");
-});
-
-app.MapGet("api/demo/bounce", () =>
-{
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("horizontal-bounce");
-});
-
-app.MapGet("api/demo/s2l", () =>
-{
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("beat-change");
-});
-
-//app.MapGet("api/demo/sendaudio", () =>
-//{
-//    FXGenerator generator = FXGenerator.Instance;
-//    generator.SendTestAudio();
-//});
-
-app.MapGet("api/demo/rainbow-audio", () =>
-{
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-    generator.ApplyMovementEffect("rainbow-audio");
-
-    return Results.Ok($"S2L effect enabled: \'rainbow audio\'");
 });
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
