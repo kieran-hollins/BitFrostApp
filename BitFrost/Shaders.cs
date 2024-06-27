@@ -13,6 +13,23 @@ namespace BitFrost
     {
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.X)]
+        public readonly partial struct WarmWhite : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public void Execute()
+            {
+                int i = ThreadIds.X;
+
+                LEDColours[i * 3 + 0] = 0.3f; // Red
+                LEDColours[i * 3 + 1] = 0.6f; // Green
+                LEDColours[i * 3 + 2] = 0.1f; // Blue
+            }
+        }
+
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.X)]
         public readonly partial struct StaticRed : IComputeShader
         {
             public readonly ReadWriteBuffer<float> LEDColours;
@@ -216,16 +233,26 @@ namespace BitFrost
                 return spectralCentroid;
             }
 
-            //float ComputeMagnitude()
-            //{
-                
-            //}
+            float CalculateNormalisedMagnitude(int index)
+            {
+                if (index > magnitudeBuffer.Length)
+                {
+                    return 0.0f;
+                }
+
+                float mag = magnitudeBuffer[index];
+
+                float normalisedMag = Hlsl.Lerp(0.0f, 1.0f, mag);
+
+                return normalisedMag;
+
+            }
 
             float3 Pallete(float t)
             {
-                float3 a = new(0.5f, 0.5f, 0.5f);
+                float3 a = new(0.1f, 0.1f, 0.1f);
                 float3 b = new(0.5f, 0.5f, 0.5f);
-                float3 c = new(1.0f, 1.0f, 1.0f);
+                float3 c = new(0.3f, 0.3f, 0.3f);
                 float3 d = new(0.263f, 0.416f, 0.557f);
 
                 return a + b * Hlsl.Cos(6.28318f * (c * t + d));
@@ -242,13 +269,14 @@ namespace BitFrost
 
                 int idx = (ThreadIds.Y * width + ThreadIds.X);
 
+                float normalisedMag = CalculateNormalisedMagnitude(idx);
                 float spectralCentroid = ComputeSpectralCentroid();
 
                 uv = (uv * 2.0f - wh) / h;
                 float2 uv0 = uv;
                 float3 finalColour = new float3(0.0f, 0.0f, 0.0f);
 
-
+                
 
                 for (float i = 0.0f; i < 4.0f; i++)
                 {
@@ -256,7 +284,7 @@ namespace BitFrost
 
                     float d = Hlsl.Length(uv) * Hlsl.Exp(-Hlsl.Length(uv0));
 
-                    float3 col = Pallete(spectralCentroid); // Pallete(Hlsl.Length(uv0) + i * 0.4f + time * spectralCentroid);
+                    float3 col = Pallete(Hlsl.Length(uv0) + i * 0.4f + time * 0.4f);
 
                     d = Hlsl.Sin(d * 8.0f + time) / 8.0f;
                     d = Hlsl.Abs(d);
@@ -268,9 +296,9 @@ namespace BitFrost
                 //float spectralCentroid = ComputeSpectralCentroid();
                 //float3 finalColour = new(spectralCentroid, spectralCentroid, spectralCentroid);
 
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0.3f, 1.0f, finalColour.X); // Red
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = Hlsl.Lerp(0.3f, 1.0f, finalColour.Y); // Green
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = Hlsl.Lerp(0.3f, .0f, finalColour.Z); // Blue
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0.0f, normalisedMag, finalColour.X); // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = Hlsl.Lerp(0.0f, normalisedMag, finalColour.Y); // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = Hlsl.Lerp(0.0f, normalisedMag, finalColour.Z); // Blue
             }
         }
 
@@ -536,10 +564,10 @@ namespace BitFrost
                 // Surface color value.
                 float3 oC = new float3(1, 1, 1);
 
-                if (fold.X > 0.0f) oC = new float3(1, 0.05f, 0.1f) * c2; // Reddish pink with finer grained Truchet overlay.
+                if (fold.X > 0.0f) oC = new float3(0.2f, 0.7f, 0.05f) * c2; // Reddish pink with finer grained Truchet overlay.
 
-                if (fold.X < 0.05 && (fold.Y) < 0.0f) oC = new float3(1, 0.7f, 0.45f) * (c2 * 0.25f + 0.75f); // Lighter lined borders.
-                else if (fold.X < 0.0f) oC = new float3(1, 0.8f, 0.4f) * c2; // Gold, with overlay.
+                if (fold.X < 0.05 && (fold.Y) < 0.0f) oC = new float3(1, 0.7f, 0.45f) * (c2 * 0.5f + 0.75f); // Lighter lined borders.
+                else if (fold.X < 0.0f) oC = new float3(0.2f, 0.8f, 0.2f) * c2; // Gold, with overlay.
 
                 //oC *= n3D(sp*128.)*.35 + .65; // Extra fine grained noisy texturing.
 
@@ -588,9 +616,132 @@ namespace BitFrost
                 // Rough gamma correction, then present to the screen.
                 float4 Colour = new float4(Hlsl.Sqrt(Hlsl.Clamp(col, 0.0f, 1.0f)), 1.0f);
 
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.X; // Red
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.Y; // Green
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.Z; // Blue
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.X); // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.Y); // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.Z); // Blue
+            }
+        }
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.XY)]
+        public readonly partial struct SoundEclipse : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> MagnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> FrequencyBuffer;
+            public readonly int Width;
+            public readonly int Height;
+            public readonly float Time;
+            public readonly float FrequencyRange = 64.0f;
+            public readonly float RADIUS = 0.6f;
+            public readonly float BRIGHTNESS = 0.2f;
+            public readonly float SPEED = 0.5f;
+
+            // Convert HSV to RGB: Ensuring const correctness and vec3 for p
+            float3 Hsv2rgb(float3 c)
+            {
+                float4 K = new float4(1.0f, 2.0f / 3.0f, 1.0f / 3.0f, 3.0f);
+                float3 p = Hlsl.Abs(Hlsl.Frac(c.XXX + K.XYZ) * 6.0f - K.WWW);
+                return c.Z * Hlsl.Lerp(K.XXX, Hlsl.Clamp(p - K.XXX, 0.0f, 1.0f), c.Y);
+            }
+
+            float3 GradientColour(float t)
+            {
+                float3 a = new float3(0.5f, 0.5f, 0.5f);
+                float3 b = new float3(0.5f, 0.5f, 0.5f);
+                float3 c = new float3(1.0f, 1.0f, 1.0f);
+                float3 d = new float3(0.0f, 0.33f, 0.67f); // Controls range of colours
+                return a + b * Hlsl.Cos(2.0f * (float)Math.PI * (c * t + d));
+            }
+
+            float Luminance(float3 colour)
+            {
+                float3 lumWeight = new float3(0.299f, 0.587f, 0.114f);
+                return Hlsl.Dot(colour, lumWeight);
+            }
+
+            float GetFrequency(float x)
+            {
+                float freqRange = (float)FrequencyBuffer.Length;
+                float baseIndex = Hlsl.Floor(x * freqRange) / freqRange;
+                float sum = 0.0f;
+                float count = 0.0f;
+
+                // Smoothing by averaging over a range of indices
+                for (float i = -2.0f; i <= 2.0f; i += 1.0f)
+                {
+                    float sampleIndex = baseIndex + i / freqRange;
+                    if (sampleIndex >= 0 && sampleIndex < freqRange)
+                    {
+                        int intIndex = (int)(sampleIndex * freqRange);
+                        sum += FrequencyBuffer[intIndex];
+                        count += 1.0f;
+                    }
+                }
+
+                return (sum / count) + 0.06f;
+            }
+
+            float BlendFrequencies(float x)
+            {
+                float blended = Hlsl.SmoothStep(0.0f, 1.0f, Hlsl.Frac(x * FrequencyRange));
+
+                float freq1 = GetFrequency(Hlsl.Floor(x * FrequencyRange) / FrequencyRange);
+                float freq2 = GetFrequency(Hlsl.Floor(x * FrequencyRange + 1.0f) / FrequencyRange);
+
+                return Hlsl.Lerp(freq1, freq2, blended);
+            }
+
+            float3 RenderHalo(float2 fragment, float radius)
+            {
+                float dist = Hlsl.Length(fragment);
+                float ring = 1.0f / Hlsl.Abs(dist - radius);
+                float brightness = dist < radius ? BRIGHTNESS * 0.3f : BRIGHTNESS;
+                float3 col = new float3(0.0f, 0.0f, 0.0f);
+
+                float angle = Hlsl.Atan2(fragment.X, fragment.Y);
+                float3 hsvColour = new float3((angle + Time * 0.25f) / ((float)Math.PI * 2.0f), 1.0f, 1.0f);
+                col += Hsv2rgb(hsvColour) * ring * brightness;
+
+                float frequency = Hlsl.Max(BlendFrequencies(Hlsl.Abs(angle / (float)Math.PI)) - 0.02f, 0f);
+                col *= frequency;
+                col *= Hlsl.SmoothStep(radius * 0.5f, radius, dist);
+
+                float t = Time * 0.1f + (angle + 0.5f) / ((float)Math.PI * 2.0f); // Adjust time influence
+                col += GradientColour(t) * ring * (brightness * 0.2f); // Use the gradient function
+
+                return col;
+            }
+
+            float3 RenderLine(float2 fragment, float radius, float x)
+            {
+                float3 col = Hsv2rgb(new float3(x * 0.23f + Time * 0.12f, 1.0f, 1.0f));
+                float freq = Hlsl.Abs(fragment.X * 0.5f);
+                col *= (1.0f / Hlsl.Abs(fragment.Y)) * BRIGHTNESS * GetFrequency(freq);
+                col *= Hlsl.SmoothStep(radius, radius * 1.8f, Hlsl.Abs(fragment.X));
+                return col;
+            }
+
+            public void Execute()
+            {
+                int threadIndex = ThreadIds.Y * Width + ThreadIds.X;
+
+                float3 colour = new float3(0.0134f, 0.052f, 0.1f);
+                colour += RenderHalo(threadIndex, RADIUS);
+
+                float c = Hlsl.Cos(Time * SPEED);
+                float s = Hlsl.Sin(Time * SPEED);
+                float2 rot = new Float2x2(c, s, -s, c) * new float2((float)ThreadIds.X, (float)ThreadIds.Y);
+
+                colour += RenderLine(rot, RADIUS, rot.X);
+
+                colour += Hlsl.Max(Luminance(colour) - 1.0f, 0.0f);
+
+                LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 0] = colour.X; // Red
+                LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 1] = colour.Y; // Green
+                LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 2] = colour.Z; // Blue
+
             }
         }
 
@@ -622,6 +773,112 @@ namespace BitFrost
         }
 
 
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.XY)]
+        public readonly partial struct LevelMeter : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> MagnitudeBuffer;
+            public readonly ReadOnlyBuffer<float> FrequencyBuffer;
+            public readonly int Width;
+            public readonly int NumBins;
+
+            float ComputeSpectralCentroid()
+            {
+                float weightedSum = 0.0f;
+                float totalMagnitude = 0.0f;
+
+                for (int i = 0; i < FrequencyBuffer.Length; i++)
+                {
+                    if (MagnitudeBuffer[i] > 0)
+                    {
+                        weightedSum += FrequencyBuffer[i] * MagnitudeBuffer[i];
+                        totalMagnitude += MagnitudeBuffer[i];
+                    }
+                }
+
+                if (totalMagnitude == 0.0f)
+                {
+                    return 0.0f;
+                }
+
+                float spectralCentroid = weightedSum / totalMagnitude;
+                return spectralCentroid;
+            }
+
+            float AverageMagnitude()
+            {
+                float totalMag = 0.0f;
+                int magCount = 0;
+
+                for (int i = 0; i < MagnitudeBuffer.Length / 2; i++)
+                {
+                    if (MagnitudeBuffer[i] > 0)
+                    {
+                       
+                        totalMag += MagnitudeBuffer[i];
+                        magCount++;
+                    }
+                }
+
+                if (magCount == 0)
+                {
+                    return 0.0f;
+                }
+
+                return totalMag / magCount;
+
+            }
+
+            float3 ComputeColour(float ratio)
+            {
+                float3 low = new float3(0.0f, 1.0f, 0.0f); // Green
+                float3 high = new float3(1.0f, 0.0f, 0.0f); // Red
+
+                return Hlsl.Lerp(low, high, ratio);
+            }
+
+            private float3 PositionToColour(int x, int width, float ratio)
+            {
+                if ((x / width) < ratio)
+                {
+                    return new float3(0.0f, 0.0f, 0.0f);
+                }
+
+                return new float3(1.0f, 0.0f, 0.0f);
+            }
+
+            public void Execute()
+            {
+                int threadIndex = ThreadIds.Y * Width + ThreadIds.X;
+                float avgMag = AverageMagnitude();
+                float magRatio = avgMag * Width;
+
+                float3 colour = ComputeColour(avgMag);
+
+                // Noise Filtering
+                if (avgMag > 0.1f)
+                {
+                    if (ThreadIds.X < magRatio)
+                    {
+                        LEDColours[threadIndex * 3 + 0] = colour.X; // Red
+                        LEDColours[threadIndex * 3 + 1] = colour.Y; // Green
+                        LEDColours[threadIndex * 3 + 2] = colour.Z; // Blue
+                    }
+                    else
+                    {
+                        LEDColours[threadIndex * 3 + 0] = 0f; // Red
+                        LEDColours[threadIndex * 3 + 1] = 0f; // Green
+                        LEDColours[threadIndex * 3 + 2] = 0f; // Blue
+                    }
+                    
+                }
+
+                
+            }
+        }
+
+        
 
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.X)]
@@ -675,6 +932,8 @@ namespace BitFrost
                 return colour;
             }
         }
+
+
 
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.X)]

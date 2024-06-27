@@ -36,9 +36,19 @@ app.MapGet("api/demo", () =>
     
 });
 
+app.MapGet("api/demo/white", () =>
+{
+    Generator.ApplyMovementEffect("warm-white");
+});
+
 app.MapGet("api/demo/fft", () =>
 {
     Generator.ApplyMovementEffect("average");
+});
+
+app.MapGet("api/demo/level-meter", () =>
+{
+    Generator.ApplyMovementEffect("level-meter");
 });
 
 app.MapGet("api/demo/kaleidoscope-audio", () =>
@@ -54,6 +64,11 @@ app.MapGet("api/demo/truchet", () =>
 app.MapGet("api/demo/spec-test", () =>
 {
     Generator.ApplyMovementEffect("spectral-test");
+});
+
+app.MapGet("api/demo/sound-eclipse", () =>
+{
+    Generator.ApplyMovementEffect("sound-eclipse");
 });
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
