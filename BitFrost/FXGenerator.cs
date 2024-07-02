@@ -131,6 +131,12 @@ namespace BitFrost
 
         private void StartWarmWhite()
         {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
             byte[] ledData = Patch.GetCurrentDMXData();  
 
             int totalLEDs = Patch.GetTotalLEDs();
@@ -250,6 +256,12 @@ namespace BitFrost
 
         private void LevelMeterShader(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
         {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
             int totalLEDs = Patch.GetTotalLEDs();
             float[] LEDColours = new float[ledData.Length];
 
@@ -300,6 +312,12 @@ namespace BitFrost
 
         private void SoundEclipseShader(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
         {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
             int totalLEDs = Patch.GetTotalLEDs();
             float[] LEDColours = new float[ledData.Length];
 
@@ -390,6 +408,12 @@ namespace BitFrost
 
         private void KaleidoscopeAudioShader(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
         {
+            if (IsProcessing)
+            {
+                return;
+            }
+            IsProcessing = true;
+
             int totalLEDs = Patch.GetTotalLEDs();
             float[] LEDColours = new float[ledData.Length];
 

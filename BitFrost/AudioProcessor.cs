@@ -32,7 +32,7 @@ namespace BitFrost
             {
                 WaveFormat = new WaveFormat(sampleRate, 1),
                 BufferMilliseconds = bufferMs,
-                DeviceNumber = 0 // Uses default audio input device
+                DeviceNumber = 0 // 0 is the default audio input device
                 
             };
             waveIn.DataAvailable += OnDataAvailable;
@@ -65,10 +65,10 @@ namespace BitFrost
             IsRecording = true;
             Debug.WriteLine("Recording Started");
 
-            SendBuffer = new System.Timers.Timer(bufferMs);
-            SendBuffer.Elapsed += SendAudioBuffers;
-            SendBuffer.AutoReset = true;
-            SendBuffer.Start();
+            //SendBuffer = new System.Timers.Timer(bufferMs);
+            //SendBuffer.Elapsed += SendAudioBuffers;
+            //SendBuffer.AutoReset = true;
+            //SendBuffer.Start();
         }
 
         public void Stop()
@@ -79,7 +79,7 @@ namespace BitFrost
                 return;
             }
             waveIn.StopRecording();
-            SendBuffer.Stop();
+            //SendBuffer.Stop();
             IsRecording = false;
             Debug.WriteLine("Recording Stopped");
         }
@@ -123,6 +123,11 @@ namespace BitFrost
             for (int i = 0; i < N / 2; i++)
             {
                 MagnitudeBuffer[i] = (float)transformedData[i].Magnitude;
+            }
+
+            if (IsRecording)
+            {
+                OnAudioBufferEvent?.Invoke(MagnitudeBuffer, FrequencyBuffer);
             }
         }
 
