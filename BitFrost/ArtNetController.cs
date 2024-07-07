@@ -25,7 +25,7 @@ namespace BitFrost
             UDPClient = new();
             DestinationEndPoint = new IPEndPoint(IPAddress.Parse(destinationIP), port);
             Enabled = false;
-            RefreshRate = (int)1000 / 30; // Frames Per Second (30 by default)
+            RefreshRate = 1000 / 30; // Frames Per Second (30 by default)
             FrontBuffer = new byte[512];
             BackBuffer = new byte[512];
             Patch = patch;
@@ -42,6 +42,7 @@ namespace BitFrost
                 state: this,
                 dueTime: RefreshRate,
                 period: RefreshRate);
+            IsBufferReady = true;
         }
 
         public void Disable()
@@ -67,14 +68,13 @@ namespace BitFrost
                 throw new ArgumentException("DMX data length exceeds 512 bytes.");
             }
 
-            Debug.WriteLine("SetData called");
-
             lock (_bufferLock)
             {
                 Array.Copy(data, BackBuffer, data.Length); // Copy new data into the back buffer
-                Debug.WriteLine($"Copying {data[0]} {data[1]} {data[2]}... to back buffer");
-                if (!IsBufferReady)
+                // Debug.WriteLine($"Copying {data[0]} {data[1]} {data[2]}... to back buffer");
+                if (IsBufferReady)
                 {
+                    IsBufferReady = false;
                     Debug.WriteLine("Swapping buffers now.");
                     SwapBuffers(); // Swap the front and back buffers
                     IsBufferReady = true;
@@ -91,10 +91,12 @@ namespace BitFrost
             }
 
             byte[] dataToSend;
+
             lock (_bufferLock)
             {
-                dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
                 IsBufferReady = false;
+                dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
+                IsBufferReady = true;
             }
 
             ArtPacket packet = new();
