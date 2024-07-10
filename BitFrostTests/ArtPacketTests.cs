@@ -28,6 +28,7 @@ namespace BitFrostTests
             Assert.AreEqual(530, result.Length);
             CollectionAssert.AreEqual(Encoding.ASCII.GetBytes("Art-Net\0"), result[0..8]);
             Assert.AreEqual(0x50, result[9]);
+            Assert.AreEqual(0x00, result[10]);
             Assert.AreEqual(0x0e, result[11]);
             CollectionAssert.AreEqual(data, result[18..]);
         }

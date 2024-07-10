@@ -67,9 +67,9 @@ namespace BitFrostTests
                 data[i] = (byte)(i % 256);
             }
 
-            receiver.BeginReceive();
-
             controller.SetData(data);
+
+            byte[] received = receiver.Receive(ref endpoint);
 
             // Wait to ensure packets are sent
             System.Threading.Thread.Sleep(2000);
@@ -77,8 +77,7 @@ namespace BitFrostTests
             controller.Disable();
 
             // Validate that the DMX data was processed
-            
-            CollectionAssert.AreEqual(data, currentData);
+            CollectionAssert.AreEqual(data, received[18..]); //Account for Art-Net header
         }
 
         [TestMethod]
