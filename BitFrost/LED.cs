@@ -7,27 +7,29 @@ namespace BitFrost
     public class LED
     {
         public int StartDMXAddress { get; set; }
+        public int ID;
         public LEDProfile LEDProfile { get; set; }
 
-        public LED(int startDMXAddress, LEDProfile ledProfile)
+        public LED(int startDMXAddress, LEDProfile ledProfile, int id)
         {
             StartDMXAddress = startDMXAddress;
             LEDProfile = ledProfile;
+            ID = id;
         }
 
-        public static LED CreateRGBLED(int startDMXAddress)
+        public static LED CreateRGBLED(int startDMXAddress, int id)
         {
-            return new LED(startDMXAddress, new RGB());
+            return new LED(startDMXAddress, new RGB(), id);
         }
 
-        public static LED CreateGRBLED(int startDMXAddress)
+        public static LED CreateGRBLED(int startDMXAddress, int id)
         {
-            return new LED(startDMXAddress, new GRB());
+            return new LED(startDMXAddress, new GRB(), id);
         }
 
-        public static LED CreateRGBWLED(int startDMXAddress)
+        public static LED CreateRGBWLED(int startDMXAddress, int id)
         {
-            return new LED(startDMXAddress, new RGBW());
+            return new LED(startDMXAddress, new RGBW(), id);
         }
     }
 
@@ -63,6 +65,7 @@ namespace BitFrost
             data[0] = Red;
             data[1] = Green;
             data[2] = Blue;
+
             Debug.WriteLine($"DMX GET: R:{this.Red} G:{this.Green} B:{this.Blue}");
 
             return data;

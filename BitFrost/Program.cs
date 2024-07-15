@@ -18,160 +18,97 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // Setup
-ArtNetController Controller = new("127.0.0.1", 0, LightingPatch.Instance);
-Controller.Enable();
+ArtNetController Controller1 = new("192.168.0.10", 0, LightingPatch.Instance);
+ArtNetController Controller2 = new("192.168.0.10", 1, LightingPatch.Instance);
+ArtNetController Controller3 = new("192.168.0.10", 2, LightingPatch.Instance);
+Controller1.Enable();
+Controller2.Enable();
+Controller3.Enable();
 
 LightingPatch Patch = LightingPatch.Instance;
 Patch.ClearAll();
 RGB rgb = new();
-Patch.AddLEDLineHorizontal(0, 0, 1, 30, rgb);
+Patch.AddRGBLEDLineHorizontal(0, 0, 1, 120);
+Patch.AddRGBLEDLineHorizontal(0, 1, 363, 120);
+Patch.AddRGBLEDLineHorizontal(0, 2, 725, 120);
 
 FXGenerator Generator = FXGenerator.Instance;
-Generator.WorkspaceHeight = 1; Generator.WorkspaceWidth = 30;
+Generator.WorkspaceHeight = 3; Generator.WorkspaceWidth = 120;
 
 
 
 app.MapGet("api/demo", () =>
 {
-    Generator.ApplyMovementEffect("hello");
+
 });
 
-app.MapGet("api/demo/shader-test-fft", () =>
+app.MapGet("api/demo/white", () =>
 {
-    Generator.ApplyMovementEffect("fft-glow");
+    Generator.ApplyMovementEffect("warm-white");
 });
 
-app.MapGet("api/demo/shader-test-waves", () =>
+app.MapGet("api/demo/lava", () =>
 {
-    Generator.ApplyMovementEffect("waves");
+    Generator.ApplyMovementEffect("lava-lamp");
 });
 
-app.MapGet("api/demo/shader-red", () =>
-{
-    Generator.ApplyMovementEffect("red");
-});
-
-app.MapGet("api/demo/shader-average", () =>
+app.MapGet("api/demo/fft", () =>
 {
     Generator.ApplyMovementEffect("average");
 });
 
-app.MapGet("api/demo/flash", () =>
+app.MapGet("api/demo/level-meter", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("colour-flash");
+    Generator.ApplyMovementEffect("level-meter");
 });
 
-app.MapGet("api/demo/bounce", () =>
+app.MapGet("api/demo/kaleidoscope-audio", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("horizontal-bounce");
+    Generator.ApplyMovementEffect("kaleidoscope-audio");
 });
 
-app.MapGet("api/demo/s2l", () =>
+app.MapGet("api/demo/truchet", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-
-    generator.SetColour(Utils.GetRandomColour());
-    generator.ApplyMovementEffect("beat-change");
+    Generator.ApplyMovementEffect("truchet");
 });
 
-//app.MapGet("api/demo/sendaudio", () =>
-//{
-//    FXGenerator generator = FXGenerator.Instance;
-//    generator.SendTestAudio();
-//});
-
-app.MapGet("api/demo/rainbow-audio", () =>
+app.MapGet("api/demo/spec-test", () =>
 {
-    LightingPatch patch = LightingPatch.Instance;
-    patch.ClearAll();
-    FXGenerator generator = FXGenerator.Instance;
-    ArtNetController controller = new ArtNetController("127.0.0.1", 0, patch);
-    controller.Enable();
-    RGB rgb = new();
-    patch.AddLEDLineHorizontal(0, 0, 1, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 1, 31, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 2, 61, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 3, 91, 10, rgb);
-    patch.AddLEDLineHorizontal(0, 4, 121, 10, rgb);
-
-    generator.WorkspaceHeight = 4; generator.WorkspaceWidth = 10;
-    generator.ApplyMovementEffect("rainbow-audio");
-
-    return Results.Ok($"S2L effect enabled: \'rainbow audio\'");
+    Generator.ApplyMovementEffect("spectral-test");
 });
+
+app.MapGet("api/demo/sound-eclipse", () =>
+{
+    Generator.ApplyMovementEffect("sound-eclipse");
+});
+
 
 app.MapPost("api/patch/LED", (int x, int y, int dmxAddress, string? type, HttpContext httpContext) =>
 {
     var patch = LightingPatch.Instance;
     try
     {
-        LED led;
+        LEDProfile profile = new RGB();
 
-        if (string.IsNullOrWhiteSpace(type))
-        {
-            led = LED.CreateRGBLED(dmxAddress);
-        }
-        else
+        if (!string.IsNullOrWhiteSpace(type))
         {
             switch (type.ToUpper())
             {
                 case "RGB":
-                    led = LED.CreateRGBLED(dmxAddress);
+                    profile = new RGB();
                     break;
                 case "RGBW":
-                    led = LED.CreateRGBWLED(dmxAddress);
+                    profile = new RGBW();
                     break;
                 case "GRB":
-                    led = LED.CreateGRBLED(dmxAddress);
+                    profile = new GRB();
                     break;
                 default:
-                    return Results.BadRequest($"Unsupported LED type: {type}");
+                    return Results.BadRequest($"Unsupported LED type: {type}. Creating RGB instead.");
             }
         }
 
-        patch.AddLED(x, y, led);
+        patch.AddLED(x, y, dmxAddress, profile);
         return Results.Ok($"LED of type {type} added at ({x}, {y}) with starting DMX address {dmxAddress}");
         
     }
@@ -195,23 +132,5 @@ app.MapDelete("api/patch/LED", (int x, int y) =>
         return Results.Problem(detail: e.Message);
     }
 });
-
-//app.MapPost("api/fx/static-colour", (string hexColour) =>
-//{
-//    var generator = FXGenerator.Instance;
-
-//    byte[] channelValues = new byte[3];
-
-//    channelValues = Utils.GetColourValuesFromHex(hexColour);
-//    try
-//    {
-//        generator.StaticColour(channelValues);
-//        return Results.Ok($"Static colour set. Hex Colour: {hexColour}");
-//    }
-//    catch (Exception e)
-//    {
-//        return Results.Problem(detail: e.Message);
-//    }
-//});
 
 app.Run();

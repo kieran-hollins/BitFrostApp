@@ -111,5 +111,23 @@ namespace BitFrost
 
             return scaledValue;
         }
+
+        public static float Lerp(float value, float oldMin, float oldMax, float newMin, float newMax)
+        {
+            if (value < oldMin)
+            {
+                value = oldMin;
+            }
+            else if (value > oldMax)
+            {
+                value = oldMax;
+            }
+
+            float oldRange = oldMax - oldMin;
+            float newRange = newMax - newMin;
+            float scaledValue = ((value - oldMin) / oldRange) * newRange + newMin;
+
+            return scaledValue;
+        }
     }
 }

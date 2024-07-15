@@ -3,6 +3,7 @@ using System.Net;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using TerraFX.Interop.Windows;
 
 namespace BitFrost
 {
@@ -18,14 +19,14 @@ namespace BitFrost
         private byte[] FrontBuffer;
         private byte[] BackBuffer;
         private LightingPatch Patch;
-        private bool IsBufferReady = false;
+        private bool IsBufferReady = true;
 
         public ArtNetController(string destinationIP, int universe, LightingPatch patch, int port = 6454)
         {
             UDPClient = new();
             DestinationEndPoint = new IPEndPoint(IPAddress.Parse(destinationIP), port);
             Enabled = false;
-            RefreshRate = (int)1000 / 30; // Frames Per Second (30 by default)
+            RefreshRate = (int)1000 / 60; // Frames Per Second (30 by default)
             FrontBuffer = new byte[512];
             BackBuffer = new byte[512];
             Patch = patch;
@@ -60,21 +61,25 @@ namespace BitFrost
             Universe = universe;
         }
 
-        public void SetData(byte[] data)
+        public void SetData(byte[] data, int u)
         {
+            if (u != Universe)
+            {
+                return;
+            }
+
             if (data.Length > 512)
             {
                 throw new ArgumentException("DMX data length exceeds 512 bytes.");
             }
 
-            Debug.WriteLine("SetData called");
-
             lock (_bufferLock)
             {
                 Array.Copy(data, BackBuffer, data.Length); // Copy new data into the back buffer
                 Debug.WriteLine($"Copying {data[0]} {data[1]} {data[2]}... to back buffer");
-                if (!IsBufferReady)
+                if (IsBufferReady)
                 {
+                    IsBufferReady = false;
                     Debug.WriteLine("Swapping buffers now.");
                     SwapBuffers(); // Swap the front and back buffers
                     IsBufferReady = true;
@@ -93,8 +98,9 @@ namespace BitFrost
             byte[] dataToSend;
             lock (_bufferLock)
             {
-                dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
                 IsBufferReady = false;
+                dataToSend = (byte[])FrontBuffer.Clone(); // Cloning front buffer ensures thread safety during send
+                IsBufferReady = true;
             }
 
             ArtPacket packet = new();
