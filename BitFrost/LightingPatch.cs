@@ -177,6 +177,52 @@ namespace BitFrost
             IsAvailable = true;
         }
 
+
+        public void AddRGBLEDLineVertical(int x, int y, int startAddress, int quantity)
+        {
+            if (!IsAvailable)
+            {
+                return;
+            }
+
+            IsAvailable = false;
+
+            int addressIndex = startAddress;
+
+            for (int i = y; i < y + quantity; i++)
+            {
+                LED led = new(addressIndex, new RGB());
+
+                try
+                {
+                    AddLED(x, i, led);
+                }
+                catch (ArgumentException e)
+                {
+                    Console.WriteLine(e.Message);
+
+                    // Undo any changes made before catching error
+                    for (int j = i - 1; j > x; j--)
+                    {
+                        try
+                        {
+                            RemoveLED(x, j);
+                        }
+                        catch
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                addressIndex += led.LEDProfile.Channels;
+            }
+
+            IsAvailable = true;
+        }
+
+
+
         public byte[] GetCurrentDMXData()
         {
             byte[] dmxData = new byte[512];
