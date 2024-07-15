@@ -72,14 +72,14 @@ namespace BitFrost
                     CurrentEffect = StartAverageColour;
                     CurrentEffect?.Invoke();
                     break;
-                //case "truchet":
-                //    Debug.WriteLine("Triggering Truchet");
-                //    if (CurrentEffect != StartTruchetShader)
-                //    {
-                //        CurrentEffect = StartTruchetShader;
-                //    }
-                //    CurrentEffect?.Invoke();
-                //    break;
+                case "truchet":
+                    Debug.WriteLine("Triggering Truchet");
+                    if (CurrentEffect != StartTruchetShader)
+                    {
+                        CurrentEffect = StartTruchetShader;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
                 //case "kaleidoscope":
                 //    Debug.WriteLine("Triggering Kaleidoscope");
                 //    if (CurrentEffect != StartKaleidoscope)
@@ -112,14 +112,14 @@ namespace BitFrost
                 //    }
                 //    CurrentEffect?.Invoke();
                 //    break;
-                //case "sound-eclipse":
-                //    Debug.WriteLine("Triggering sound eclipse");
-                //    if (CurrentEffect != StartSoundEclipse)
-                //    {
-                //        CurrentEffect = StartSoundEclipse;
-                //    }
-                //    CurrentEffect?.Invoke();
-                //    break;
+                case "sound-eclipse":
+                    Debug.WriteLine("Triggering sound eclipse");
+                    if (CurrentEffect != StartSoundEclipse)
+                    {
+                        CurrentEffect = StartSoundEclipse;
+                    }
+                    CurrentEffect?.Invoke();
+                    break;
                 case "warm-white":
                     Debug.WriteLine("Triggering warm white");
                     if (CurrentEffect != StartWarmWhite)
@@ -208,7 +208,7 @@ namespace BitFrost
                     ledBuffer,
                     magBuffer,
                     WorkspaceWidth,
-                    6
+                    12
                     );
 
             graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
@@ -220,6 +220,7 @@ namespace BitFrost
 
             try
             {
+                ledBuffer.CopyTo(LEDColours);
                 byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
 
                 UpdatePatch(processedData);
@@ -233,6 +234,63 @@ namespace BitFrost
                 IsProcessing = false;
             }
 
+        }
+
+
+
+        private void StartSoundEclipse()
+        {
+            AudioProcessor.OnAudioBufferEvent += SoundEclipseEffect;
+            AudioProcessor.Start();
+        }
+
+        private void SoundEclipseEffect(float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            SoundEclipseShader(magnitudeBuffer, frequencyBuffer);
+        }
+
+        private void SoundEclipseShader(float[] magnitudeBuffer, float[] frequencyBuffer)
+        {
+            if (IsProcessing)
+            {
+                return;
+            }
+
+            IsProcessing = true;
+
+            int totalLEDs = Patch.GetTotalLEDs();
+
+            float[] LEDColours = new float[WorkspaceWidth * 3 * WorkspaceHeight];
+
+            var graphicsDevice = GraphicsDevice.GetDefault();
+
+            var ledBuffer = graphicsDevice.AllocateReadWriteBuffer(LEDColours);
+            var magBuffer = graphicsDevice.AllocateReadOnlyBuffer(magnitudeBuffer);
+            var freqBuffer = graphicsDevice.AllocateReadOnlyBuffer(frequencyBuffer);
+
+
+            var shader = new Shaders.SoundEclipse(
+                ledBuffer,
+                magBuffer,
+                freqBuffer,
+                WorkspaceWidth,
+                WorkspaceHeight,
+                (float)DateTime.Now.Millisecond,
+                64.0f,
+                0.6f,
+                0.2f,
+                0.5f
+                );
+
+            graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
+
+            ledBuffer.CopyTo(LEDColours, 0, 0, ledBuffer.Length);
+
+            byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
+
+            UpdatePatch(processedData);
+
+            IsProcessing = false;
         }
 
 
@@ -420,64 +478,7 @@ namespace BitFrost
 
 
 
-        //private void StartSoundEclipse()
-        //{
-        //    AudioProcessor.OnAudioBufferEvent += LevelMeterEffect;
-        //    AudioProcessor.Start();
-        //}
 
-        //private void SoundEclipseEffect(float[] magnitudeBuffer, float[] frequencyBuffer)
-        //{
-        //    byte[] currentLedData = Patch.GetCurrentDMXData();
-        //    SoundEclipseShader(currentLedData, magnitudeBuffer, frequencyBuffer);
-        //}
-
-        //private void SoundEclipseShader(byte[] ledData, float[] magnitudeBuffer, float[] frequencyBuffer)
-        //{
-        //    if (IsProcessing)
-        //    {
-        //        return;
-        //    }
-        //    IsProcessing = true;
-
-        //    int totalLEDs = Patch.GetTotalLEDs();
-        //    float[] LEDColours = new float[ledData.Length];
-
-        //    var graphicsDevice = GraphicsDevice.GetDefault();
-
-        //    try
-        //    {
-        //        UpdateBuffers(magnitudeBuffer, frequencyBuffer, totalLEDs);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Debug.WriteLine(e.Message.ToString());
-        //        return;
-        //    }
-
-        //    var shader = new Shaders.SoundEclipse(
-        //        _ledBuffer,
-        //        _magBuffer,
-        //        _freqBuffer,
-        //        WorkspaceWidth,
-        //        WorkspaceHeight,
-        //        (float)DateTime.Now.Millisecond,
-        //        64.0f,
-        //        0.6f,
-        //        0.2f,
-        //        0.5f
-        //        );
-
-        //    graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
-
-        //    _ledBuffer.CopyTo(LEDColours, 0, 0, _ledBuffer.Length);
-
-        //    byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
-
-        //    UpdatePatch(processedData, totalLEDs);
-
-        //    IsProcessing = false;
-        //}
 
 
 
@@ -610,42 +611,49 @@ namespace BitFrost
 
 
 
-        //private void StartTruchetShader()
-        //{
-        //    byte[] currentLedData = Patch.GetCurrentDMXData();
-        //    TruchetShader(currentLedData);
+        private void StartTruchetShader()
+        {
+            AudioProcessor.OnAudioBufferEvent += TruchetShader;
+            AudioProcessor.Start();
+        }
 
-        //}
+        private void TruchetShader(float[] magnitudeBuffer, float[] freqBuffer)
+        {
+            if (IsProcessing)
+            {
+                return;
+            }
 
-        //private void TruchetShader(byte[] ledData)
-        //{
-        //    float[] ledColours = new float[ledData.Length];
-        //    var graphicsDevice = GraphicsDevice.GetDefault();
+            IsProcessing = true;
 
-        //    var buffer = graphicsDevice.AllocateReadWriteBuffer(ledColours);
+            int totalLEDs = Patch.GetTotalLEDs();
 
-        //    var shader = new Shaders.Truchet(
-        //        buffer,
-        //        (float)DateTime.Now.Millisecond,
-        //        WorkspaceWidth,
-        //        WorkspaceHeight
-        //        );
+            var graphicsDevice = GraphicsDevice.GetDefault();
 
-        //    graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
+            float[] LEDColours = new float[(WorkspaceWidth * 3) * WorkspaceHeight];
 
-        //    buffer.CopyTo(ledColours);
+            var ledBuffer = graphicsDevice.AllocateReadWriteBuffer(LEDColours);
 
-        //    byte[] processedData = ledColours.Select(x => (byte)(x * 255)).ToArray();
+            var shader = new Shaders.Truchet(
+                    ledBuffer,
+                    (float)DateTime.Now.Millisecond,
+                    WorkspaceWidth,
+                    WorkspaceHeight
+                    );
 
-        //    try
-        //    {
-        //        UpdatePatch(processedData, WorkspaceWidth * 3);
-        //    }
-        //    catch
-        //    {
+            graphicsDevice.For(WorkspaceWidth, WorkspaceHeight, shader);
 
-        //    }
-        //}
+            ledBuffer.CopyTo(LEDColours, 0, 0, ledBuffer.Length);
+
+            byte[] processedData = LEDColours.Select(x => (byte)(x * 255)).ToArray();
+
+            UpdatePatch(processedData);
+
+            IsProcessing = false;
+
+        }
+
+
 
 
 

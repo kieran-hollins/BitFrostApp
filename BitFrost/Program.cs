@@ -28,12 +28,12 @@ Controller3.Enable();
 LightingPatch Patch = LightingPatch.Instance;
 Patch.ClearAll();
 RGB rgb = new();
-Patch.AddRGBLEDLineHorizontal(0, 0, 1, 120);
-Patch.AddRGBLEDLineHorizontal(0, 1, 363, 120);
-Patch.AddRGBLEDLineHorizontal(0, 2, 725, 120);
+Patch.AddRGBLEDLineHorizontal(0, 0, 1, 67);
+Patch.AddRGBLEDLineHorizontal(0, 1, 202, 67);
+Patch.AddRGBLEDLineHorizontal(0, 2, 403, 67);
 
 FXGenerator Generator = FXGenerator.Instance;
-Generator.WorkspaceHeight = 3; Generator.WorkspaceWidth = 120;
+Generator.WorkspaceHeight = 3; Generator.WorkspaceWidth = 67;
 
 
 

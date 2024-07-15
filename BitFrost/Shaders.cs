@@ -616,9 +616,9 @@ namespace BitFrost
                 // Rough gamma correction, then present to the screen.
                 float4 Colour = new float4(Hlsl.Sqrt(Hlsl.Clamp(col, 0.0f, 1.0f)), 1.0f);
 
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.X); // Red
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.Y); // Green
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Hlsl.Lerp(0f, 1f, Colour.Z); // Blue
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.X; // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.Y; // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] =  Colour.Z; // Blue
             }
         }
 
@@ -905,6 +905,43 @@ namespace BitFrost
 
         [AutoConstructor]
         [EmbeddedBytecode(DispatchAxis.XY)]
+        public readonly partial struct Beets : IComputeShader
+        {
+            public readonly ReadWriteBuffer<float> LEDColours;
+            public readonly ReadOnlyBuffer<float> magnitudeBuffer;
+            public readonly int width;
+            public readonly int height;
+
+            public void Execute()
+            {
+                float totalMagnitude = 0.0f;
+                float avgMagnitude = 0.0f;
+                float threshold = 0.3f;
+                int totalElements = magnitudeBuffer.Length / 2;
+                for (int i = 0; i <  totalElements; i++)
+                {
+                    totalMagnitude += magnitudeBuffer[i];
+                }
+
+                if (totalMagnitude > threshold)
+                {
+                    avgMagnitude = totalMagnitude / totalElements;
+                }
+                else avgMagnitude = 0.0f;
+
+
+                float3 finalColour = new float3(0.9f, 0, 0) * Hlsl.Lerp(0.0f, 1.0f, avgMagnitude);
+                // Assign the final color to the LED buffer
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.X;
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = finalColour.Y;
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = finalColour.Z;
+            }
+        }
+
+
+
+        [AutoConstructor]
+        [EmbeddedBytecode(DispatchAxis.XY)]
         public readonly partial struct AverageColourShader : IComputeShader
         {
             public readonly ReadWriteBuffer<float> LEDColours;
@@ -915,6 +952,7 @@ namespace BitFrost
             public void Execute()
             {
                 int x = ThreadIds.X;
+                float threshold = 0.15f;
                 int totalElements = magnitudeBuffer.Length / 2;
 
                 // Calculate the current bin index based on the thread ID and width
@@ -922,6 +960,12 @@ namespace BitFrost
 
                 // Fetch the magnitude for the current bin
                 float magnitude = magnitudeBuffer[binIndex];
+
+                if (magnitude > threshold)
+                {
+                    magnitude *= 100;
+                }
+                else magnitude = 0;
 
                 // Normalize the magnitude
                 float normalizedMagnitude = Hlsl.Lerp(0.0f, 1.0f, magnitude);
@@ -931,9 +975,9 @@ namespace BitFrost
                 float3 finalColour = colour * normalizedMagnitude;
 
                 // Assign the final color to the LED buffer
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.X;
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = finalColour.Y;
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = finalColour.Z;
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.X; // Red
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = finalColour.Y; // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = finalColour.Z; // Blue
             }
 
             private float3 PositionToColour(int x, int width)
@@ -955,6 +999,7 @@ namespace BitFrost
                 return colour;
             }
         }
+
 
 
 
