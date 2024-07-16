@@ -193,8 +193,8 @@ namespace BitFrost
 
 
                 LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.X; // Red
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.Y; // Green
-                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = finalColour.Z; // Blue
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 1] = finalColour.Y; // Green
+                LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 2] = finalColour.Z; // Blue
             }
         }
 
@@ -242,7 +242,12 @@ namespace BitFrost
 
                 float mag = magnitudeBuffer[index];
 
-                float normalisedMag = Hlsl.Lerp(0.0f, 1.0f, mag);
+                if (mag < 0.3f)
+                {
+                    return 0.0f;
+                }
+
+                float normalisedMag = Hlsl.Lerp(0.2f, 0.6f, mag);
 
                 return normalisedMag;
 
@@ -614,7 +619,7 @@ namespace BitFrost
 
 
                 // Rough gamma correction, then present to the screen.
-                float4 Colour = new float4(Hlsl.Sqrt(Hlsl.Clamp(col, 0.0f, 1.0f)), 1.0f);
+                float4 Colour = new float4(Hlsl.Sqrt(Hlsl.Clamp(col, 0.1f, 0.6f)), 1.0f);
 
                 LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.X; // Red
                 LEDColours[(ThreadIds.Y * width + ThreadIds.X) * 3 + 0] = Colour.Y; // Green
@@ -854,22 +859,22 @@ namespace BitFrost
                 float avgMag = AverageMagnitude();
                 float magRatio = avgMag * Width;
 
-                float3 colour = ComputeColour(avgMag);
+                float3 finalColour = ComputeColour(avgMag);
 
                 // Noise Filtering
                 if (avgMag > 0.1f)
                 {
                     if (ThreadIds.X < magRatio)
                     {
-                        LEDColours[threadIndex * 3 + 0] = colour.X; // Red
-                        LEDColours[threadIndex * 3 + 1] = colour.Y; // Green
-                        LEDColours[threadIndex * 3 + 2] = colour.Z; // Blue
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 0] = finalColour.X;
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 1] = finalColour.Y;
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 2] = finalColour.Z;
                     }
                     else
                     {
-                        LEDColours[threadIndex * 3 + 0] = 0f; // Red
-                        LEDColours[threadIndex * 3 + 1] = 0f; // Green
-                        LEDColours[threadIndex * 3 + 2] = 0f; // Blue
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 0] = finalColour.X;
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 1] = finalColour.Y;
+                        LEDColours[(ThreadIds.Y * Width + ThreadIds.X) * 3 + 2] = finalColour.Z;
                     }
 
                 }

@@ -37,10 +37,6 @@ Generator.WorkspaceHeight = 3; Generator.WorkspaceWidth = 67;
 
 
 
-app.MapGet("api/demo", () =>
-{
-
-});
 
 app.MapGet("api/demo/white", () =>
 {
@@ -60,6 +56,11 @@ app.MapGet("api/demo/fft", () =>
 app.MapGet("api/demo/level-meter", () =>
 {
     Generator.ApplyMovementEffect("level-meter");
+});
+
+app.MapGet("api/demo/kaleidoscope", () =>
+{
+    Generator.ApplyMovementEffect("kaleidoscope");
 });
 
 app.MapGet("api/demo/kaleidoscope-audio", () =>
